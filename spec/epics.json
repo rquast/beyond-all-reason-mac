@@ -1,0 +1,27 @@
+{
+  "epics": {
+    "macos-layer": {
+      "id": "macos-layer",
+      "title": "macOS layer (reverse ACDD)",
+      "createdAt": "2026-09-08T04:02:54.553Z",
+      "description": "The curated macOS layer on top of the pinned upstream Recoil tag — every behavior change, tracked as spec + tests. Areas: determinism, graphics/present, platform/input, build/release, launcher/content.",
+      "workUnits": [
+        "SYNC-001",
+        "SYNC-002",
+        "SYNC-003",
+        "GFX-001",
+        "GFX-002",
+        "GFX-003",
+        "SYNC-004",
+        "PLAT-001",
+        "PLAT-002",
+        "PLAT-003",
+        "PLAT-004",
+        "PLAT-005",
+        "BUILD-001",
+        "BUILD-002",
+        "LAUNCH-001"
+      ]
+    }
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "categories": [
+    {
+      "name": "Phase Tags",
+      "description": "Phase identification tags",
+      "required": true,
+      "tags": [
+        {
+          "name": "@done",
+          "description": "Work complete and done"
+        },
+        {
+          "name": "@wip",
+          "description": "Work in progress"
+        }
+      ]
+    },
+    {
+      "name": "Component Tags",
+      "description": "Architectural component tags",
+      "required": true,
+      "tags": [
+        {
+          "name": "@foundation",
+          "description": "Foundation / project bootstrap work (event storm, foundation.json, tags)"
+        },
+        {
+          "name": "@log-backend",
+          "description": "Log backend subsystem (System/Log): backend choke point, sinks, filters, repeat coalescer"
+        }
+      ]
+    },
+    {
+      "name": "Feature Group Tags",
+      "description": "Functional area tags",
+      "required": true,
+      "tags": [
+        {
+          "name": "@build-release",
+          "description": "Build, packaging, signing, certification pipeline"
+        },
+        {
+          "name": "@graphics-present",
+          "description": "Native Metal graphics: driver stack, EGL, readback, present, windowing/HiDPI"
+        },
+        {
+          "name": "@launcher-content",
+          "description": "BAR launcher app and game content distribution"
+        },
+        {
+          "name": "@log",
+          "description": "Logging infrastructure feature area (log backend, sinks, filters, coalescer)"
+        },
+        {
+          "name": "@project",
+          "description": "Project-level / meta features (foundation, docs, process)"
+        },
+        {
+          "name": "@simulation",
+          "description": "Simulation determinism feature area (sim behavior, streflop, libm parity)"
+        }
+      ]
+    },
+    {
+      "name": "Technical Tags",
+      "description": "Technical concern tags",
+      "required": false,
+      "tags": [
+        {
+          "name": "@determinism",
+          "description": "Multiplayer determinism / bit-exact simulation (sim, streflop, libm parity, sync gates)"
+        },
+        {
+          "name": "@graphics",
+          "description": "Native Metal graphics path: Mesa Zink/KosmicKrisp driver, EGL context, readback/present, windowing/HiDPI"
+        }
+      ]
+    },
+    {
+      "name": "Platform Tags",
+      "description": "Platform-specific tags",
+      "required": false,
+      "tags": []
+    },
+    {
+      "name": "Priority Tags",
+      "description": "Implementation priority tags",
+      "required": false,
+      "tags": [
+        {
+          "name": "@critical",
+          "description": "High-priority / important features"
+        }
+      ]
+    },
+    {
+      "name": "Status Tags",
+      "description": "Development status tags",
+      "required": false,
+      "tags": []
+    },
+    {
+      "name": "Testing Tags",
+      "description": "Test-related tags",
+      "required": false,
+      "tags": []
+    },
+    {
+      "name": "Automation Tags",
+      "description": "Automation integration tags",
+      "required": false,
+      "tags": []
+    }
+  ],
+  "statistics": {
+    "lastUpdated": "2026-09-08T05:39:15.295Z"
+  }
+}

@@ -141,6 +141,20 @@ endif()
 	add_spring_test(${test_name} "${test_src}" "${test_libs}" "")
 
 ################################################################################
+### LogCoalescer (port's generic log repeat-coalescer, System/Log/Backend.cpp)
+	set(test_name LogCoalescer)
+	set(test_src
+			"${CMAKE_CURRENT_SOURCE_DIR}/engine/System/Log/testLogCoalescer.cpp"
+			${test_Common_sources}
+		)
+
+	set(test_libs
+			""
+		)
+
+	add_spring_test(${test_name} "${test_src}" "${test_libs}" "")
+
+################################################################################
 ### SyncedPrimitive
 	set(test_name SyncedPrimitive)
 	set(test_src
@@ -532,6 +546,18 @@ endif()
 			""
 		)
 	add_spring_test(${test_name} "${test_src}" "${test_libs}" "")
+
+################################################################################
+### RangesCompat (port's C++23 enumerate shim + synced float->short desync class)
+	set(test_name RangesCompat)
+	set(test_src
+			"${CMAKE_CURRENT_SOURCE_DIR}/engine/System/Misc/testRangesCompat.cpp"
+			${test_Common_sources}
+		)
+	set(test_libs
+			""
+		)
+	add_spring_test(${test_name} "${test_src}" "${test_libs}" "-DNOT_USING_CREG")
 
 ################################################################################
 ### SerializeLuaState

@@ -35,18 +35,28 @@ remove_definitions(-DTHREADPOOL)
 # Need nowide include
 set(NOWIDE_INCLUDE_DIR ${SOURCE_ROOT}/lib/nowide/include)
 
+# ${SPRING_MINIZIP_INCLUDE_DIR} is a generic Homebrew include tree
+# (/opt/homebrew/include) on Apple Silicon. It can carry a different-version
+# fmt/ (e.g. brew fmt 12.2 next to our vendored 12.1). Target-level include
+# dirs beat usage requirements, so <fmt/*.h> would resolve to the Homebrew
+# headers while we link the vendored libfmt.a -> undefined symbols at link
+# time (fmt 12.2 made fmt::detail::allocate an out-of-line FMT_FUNC that the
+# vendored 12.1 libfmt.a does not export). Pin the vendored, version-matched
+# fmt include first, the same way lib/simdjson is pinned in rts/CMakeLists.txt.
+set(VENDORED_FMT_INCLUDE ${SOURCE_ROOT}/lib/fmt/include)
+
 add_library(archives STATIC ${archives_sources})
 if (THREADPOOL)
 	target_compile_definitions(archives PRIVATE -DTHREADPOOL)
 endif()
 target_include_directories(archives
-	PRIVATE ${SOURCE_ROOT} ${SPRING_MINIZIP_INCLUDE_DIR} ${NOWIDE_INCLUDE_DIR})
+	BEFORE PRIVATE ${VENDORED_FMT_INCLUDE} ${SOURCE_ROOT} ${SPRING_MINIZIP_INCLUDE_DIR} ${NOWIDE_INCLUDE_DIR})
 target_link_libraries(archives
 	PRIVATE 7zip ${SPRING_MINIZIP_LIBRARY} Tracy::TracyClient nowide::nowide fmt::fmt)
 
 add_library(archives_nothreadpool STATIC ${archives_sources})
 target_compile_options(archives_nothreadpool PRIVATE ${PIC_FLAG})
 target_include_directories(archives_nothreadpool
-	PRIVATE ${SOURCE_ROOT} ${SPRING_MINIZIP_INCLUDE_DIR} ${NOWIDE_INCLUDE_DIR})
+	BEFORE PRIVATE ${VENDORED_FMT_INCLUDE} ${SOURCE_ROOT} ${SPRING_MINIZIP_INCLUDE_DIR} ${NOWIDE_INCLUDE_DIR})
 target_link_libraries(archives_nothreadpool
 	PRIVATE 7zip ${SPRING_MINIZIP_LIBRARY} nowide::nowide fmt::fmt)

@@ -1,0 +1,210 @@
+{
+  "version": "2.0.0",
+  "project": {
+    "name": "bar-macos",
+    "vision": "A native Apple Silicon build of the Recoil RTS engine that lets Beyond All Reason run on macOS with full graphics and bit-exact, cross-platform multiplayer — no Rosetta, no VM, no desync.",
+    "projectType": "desktop-app"
+  },
+  "problemSpace": {
+    "primaryProblem": {
+      "title": "BAR players on Apple Silicon Macs cannot play natively",
+      "description": "Beyond All Reason ships no official macOS build. Apple Silicon Mac users must run Windows builds under Rosetta or a VM (slow, fragile, and not multiplayer-safe), and prior native ARM64 attempts desynced in lockstep multiplayer because Apple's libm, float-to-int conversion, and FMA contraction produce per-ULP-different simulation results than the x86 fleet — a Mac client that desyncs is unplayable in public matches.",
+      "impact": "high"
+    }
+  },
+  "solutionSpace": {
+    "overview": "A curated, rebaseable macOS layer on top of the pinned upstream Recoil engine (2025.06.24) that makes the sim bit-exact on arm64 (fleet-parity libm, x86 float-to-int semantics, no FMA contraction), renders OpenGL 4.6 natively via Mesa Zink + KosmicKrisp into Metal, and ships one-command, reproducible build/certify/release tooling plus a drag-to-install BAR launcher — so a Mac client joins the same live multiplayer fleet as Windows/Linux.",
+    "capabilities": [
+      {
+        "name": "Bit-Exact Cross-Architecture Simulation",
+        "description": "A Mac client computes a bit-identical simulation to the Windows/Linux fleet: fleet-parity glibc libm for double math, x86 float-to-int conversion semantics on arm64, FMA contraction disabled, and the sim + streflop layers untouched behaviorally"
+      },
+      {
+        "name": "Native Metal Graphics Path",
+        "description": "OpenGL 4.6 compatibility profile on Apple Silicon via the pinned Mesa Zink + KosmicKrisp driver stack translating into Metal, with a rebuilt EGL context and readback/present pipeline (unified-memory direct present, IOSurface fallback), Retina/HiDPI, window resize, borderless fullscreen, and loud failure instead of silent software-GL fallback"
+      },
+      {
+        "name": "One-Command Reproducible Build and Release",
+        "description": "Reproducible, one-command pipeline (make app / engine / engine-dist / certify / release) that builds the pinned Mesa driver, builds the engine with the deterministic-FP configuration, runs the determinism gates, and produces staged, signed, notarized .app/.dmg/.zip artifacts with provenance-stamped driver builds"
+      },
+      {
+        "name": "BAR Launcher and Content Distribution",
+        "description": "Drag-to-install BAR Launcher.app that (after an explicit consent prompt) downloads Beyond All Reason from the official content network, keeps it updated, and launches into the lobby; also ships as an engine-only distro for other game communities"
+      },
+      {
+        "name": "Determinism Certification and Gates",
+        "description": "Certification that a shipped build stays multiplayer-safe: streflop cross-arch bit-exactness test, 9/9 fleet libm hash gate, full-length replay re-simulation (REPLAY_SYNC_OK), live cross-platform match matrix, GPU driver-identity smoke, artifact verification (file/otool/lipo), and version pinning to the engine version the live fleet runs"
+      },
+      {
+        "name": "Upstream Maintenance and Version Pinning",
+        "description": "The macOS layer stays a thin, rebaseable patch set on upstream: version-bump / rebase-onto-a-new-release procedure, upstream candidate tracking so the patch series shrinks over time, pinned dependency versions with documented rationale, and runtime knobs (springsettings config + env escape hatches) for diagnosis without recompiling"
+      }
+    ]
+  },
+  "personas": [
+    {
+      "name": "Mac Player",
+      "description": "A Beyond All Reason player on an Apple Silicon Mac who wants to play the game natively — including public multiplayer — without Rosetta, a VM, or desyncing against the official fleet",
+      "goals": [
+        "Play BAR natively on macOS at display-class frame rates",
+        "Join live multiplayer matches with the official Windows/Linux builds",
+        "Install and keep the game updated without manual steps"
+      ]
+    },
+    {
+      "name": "Port Maintainer",
+      "description": "Maintainer or contributor of the macOS layer (human or AI-assisted) who keeps the port rebaseable, deterministic, and upstreamable; works in a repo with hard rules (sim untouchable, no fast-math, thin patch series) and a multi-tier verification ladder",
+      "goals": [
+        "Ship certified, notarized macOS builds from the pinned upstream release",
+        "Keep the sim bit-exact — pass every determinism gate on every change",
+        "Keep the macOS layer a thin, rebaseable, upstreamable patch series"
+      ]
+    }
+  ],
+  "eventStorm": {
+    "level": "big_picture",
+    "items": [
+      {
+        "id": 1,
+        "type": "bounded_context",
+        "text": "Deterministic Simulation",
+        "color": null,
+        "deleted": false,
+        "createdAt": "2026-09-07T12:00:18.304Z"
+      },
+      {
+        "id": 2,
+        "type": "bounded_context",
+        "text": "Native Graphics & Present",
+        "color": null,
+        "deleted": false,
+        "createdAt": "2026-09-07T12:00:22.675Z"
+      },
+      {
+        "id": 3,
+        "type": "bounded_context",
+        "text": "Build & Release Pipeline",
+        "color": null,
+        "deleted": false,
+        "createdAt": "2026-09-07T12:00:27.064Z"
+      },
+      {
+        "id": 4,
+        "type": "bounded_context",
+        "text": "Content Distribution & Launcher",
+        "color": null,
+        "deleted": false,
+        "createdAt": "2026-09-07T12:00:33.393Z"
+      },
+      {
+        "id": 5,
+        "type": "aggregate",
+        "text": "SyncedState",
+        "boundedContextId": 1,
+        "color": "yellow",
+        "deleted": false,
+        "createdAt": "2026-09-07T12:00:38.144Z"
+      },
+      {
+        "id": 6,
+        "type": "aggregate",
+        "text": "PresentFrame",
+        "boundedContextId": 2,
+        "color": "yellow",
+        "deleted": false,
+        "createdAt": "2026-09-07T12:00:41.756Z"
+      },
+      {
+        "id": 7,
+        "type": "aggregate",
+        "text": "ReleaseArtifact",
+        "boundedContextId": 3,
+        "color": "yellow",
+        "deleted": false,
+        "createdAt": "2026-09-07T12:00:45.273Z"
+      },
+      {
+        "id": 8,
+        "type": "aggregate",
+        "text": "GameContent",
+        "boundedContextId": 4,
+        "color": "yellow",
+        "deleted": false,
+        "createdAt": "2026-09-07T12:00:49.892Z"
+      },
+      {
+        "id": 9,
+        "type": "event",
+        "text": "SyncGatePassed",
+        "boundedContextId": 1,
+        "color": "orange",
+        "deleted": false,
+        "createdAt": "2026-09-07T12:00:53.502Z"
+      },
+      {
+        "id": 10,
+        "type": "event",
+        "text": "SyncGateFailed",
+        "boundedContextId": 1,
+        "color": "orange",
+        "deleted": false,
+        "createdAt": "2026-09-07T12:00:56.631Z"
+      },
+      {
+        "id": 11,
+        "type": "event",
+        "text": "EngineVersionPinned",
+        "boundedContextId": 1,
+        "color": "orange",
+        "deleted": false,
+        "createdAt": "2026-09-07T12:01:01.945Z"
+      },
+      {
+        "id": 12,
+        "type": "command",
+        "text": "RunStreflopSyncTest",
+        "boundedContextId": 1,
+        "color": "blue",
+        "deleted": false,
+        "createdAt": "2026-09-07T12:01:06.333Z"
+      },
+      {
+        "id": 13,
+        "type": "event",
+        "text": "FramePresented",
+        "boundedContextId": 2,
+        "color": "orange",
+        "deleted": false,
+        "createdAt": "2026-09-07T12:01:10.552Z"
+      },
+      {
+        "id": 14,
+        "type": "event",
+        "text": "DriverIdentityVerified",
+        "boundedContextId": 2,
+        "color": "orange",
+        "deleted": false,
+        "createdAt": "2026-09-07T12:01:14.324Z"
+      },
+      {
+        "id": 15,
+        "type": "event",
+        "text": "ArtifactBuilt",
+        "boundedContextId": 3,
+        "color": "orange",
+        "deleted": false,
+        "createdAt": "2026-09-07T12:01:18.402Z"
+      },
+      {
+        "id": 16,
+        "type": "event",
+        "text": "ReleaseCertified",
+        "boundedContextId": 3,
+        "color": "orange",
+        "deleted": false,
+        "createdAt": "2026-09-07T12:01:22.629Z"
+      }
+    ],
+    "nextItemId": 17
+  }
+}

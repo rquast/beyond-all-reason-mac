@@ -206,7 +206,14 @@ set(sources_engine_System
 
 ### only use the target platform related directory
 if     (APPLE)
-	make_global_var(sources_engine_System_Threading ${sources_engine_System_Threading} ${sources_engine_System_Threading_Mac})
+	# macOS has no platform-specific SharedLib implementation of its own:
+	# SharedLib.cpp's non-Windows path #includes Linux/SoLib.h and the
+	# __APPLE__ branch (SL_IMPL_EXT "dylib") reuses the POSIX dlopen SoLib.
+	# SoLib.cpp must therefore be linked wherever SharedLib.cpp is, exactly
+	# like the Linux Threading list — otherwise every consumer of
+	# sources_engine_System_Threading (unit tests, engine libs) that instantiates
+	# a shared lib leaves SoLib::SoLib undefined at link time.
+	make_global_var(sources_engine_System_Threading ${sources_engine_System_Threading} ${sources_engine_System_Threading_Mac} "${CMAKE_CURRENT_SOURCE_DIR}/Platform/Linux/SoLib.cpp")
 	# MacPresentBackend is the EGL/CAMetalLayer present backend: it needs the
 	# engine's full include env (SDL, EGL, glad, ConfigHandler) so it lives on
 	# the engine source list only, NOT in the lean platform_sources lib (which

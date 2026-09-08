@@ -1,0 +1,356 @@
+{
+  "version": "0.7.1",
+  "meta": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-09-08T05:46:36.622Z"
+  },
+  "workUnits": {
+    "FOUND-001": {
+      "id": "FOUND-001",
+      "title": "Conduct Foundation Event Storm for Foundation",
+      "status": "done",
+      "createdAt": "2026-09-07T11:52:55.946Z",
+      "updatedAt": "2026-09-07T12:10:38.224Z",
+      "stateHistory": [
+        {
+          "state": "backlog",
+          "timestamp": "2026-09-07T11:52:55.946Z"
+        },
+        {
+          "state": "specifying",
+          "timestamp": "2026-09-07T12:02:12.130Z"
+        },
+        {
+          "state": "implementing",
+          "timestamp": "2026-09-07T12:06:04.850Z"
+        },
+        {
+          "state": "validating",
+          "timestamp": "2026-09-07T12:06:18.935Z"
+        },
+        {
+          "state": "done",
+          "timestamp": "2026-09-07T12:10:38.224Z"
+        }
+      ],
+      "description": "Complete the foundation by capturing domain architecture through Foundation Event Storm.\n\nUse these commands to populate foundation.json eventStorm field:\n- fspec add-foundation-bounded-context <name>\n- fspec remove-foundation-bounded-context <name> [--cascade]\n- fspec add-aggregate-to-foundation <context> <aggregate>\n- fspec remove-aggregate-from-foundation <context> <aggregate>\n- fspec add-domain-event-to-foundation <context> <event>\n- fspec remove-domain-event-from-foundation <context> <event>\n- fspec add-command-to-foundation <context> <command>\n- fspec remove-command-from-foundation <context> <command>\n- fspec show-foundation-event-storm\n\nWhy this matters:\n- Establishes bounded contexts for domain-driven design\n- Enables tag ontology generation from domain model\n- Provides foundation for architectural documentation\n- Supports EXMAP-004 tag discovery workflow\n\nSee spec/CLAUDE.md \"Foundation Event Storm\" section for detailed guidance.",
+      "type": "task",
+      "userStory": {
+        "role": "port maintainer",
+        "action": "map the bounded contexts, aggregates, domain events, and commands of this macOS engine port",
+        "benefit": "the project foundation reflects the real domain so specs and tags stay consistent"
+      },
+      "rules": [
+        {
+          "id": 0,
+          "text": "Foundation event storm captures the 4 bounded contexts (Deterministic Simulation, Native Graphics & Present, Build & Release Pipeline, Content Distribution & Launcher), 4 aggregates, and the core domain events",
+          "deleted": false,
+          "createdAt": "2026-09-07T12:02:52.629Z"
+        }
+      ],
+      "nextRuleId": 1,
+      "examples": [
+        {
+          "id": 0,
+          "text": "spec/foundation.json lists the 4 bounded contexts with aggregates: SyncedState, PresentFrame, ReleaseArtifact, GameContent",
+          "deleted": false,
+          "createdAt": "2026-09-07T12:03:00.397Z"
+        },
+        {
+          "id": 1,
+          "text": "show-foundation event-storm view shows the 4 bounded contexts, their aggregates (SyncedState, PresentFrame, ReleaseArtifact, GameContent), and the domain events (SyncGatePassed, FramePresented, ReleaseCertified)",
+          "deleted": false,
+          "createdAt": "2026-09-07T12:03:26.286Z"
+        }
+      ],
+      "nextExampleId": 2
+    },
+    "SYNC-001": {
+      "id": "SYNC-001",
+      "title": "Streflop cross-arch bit-exactness gate runs and passes on every build",
+      "type": "story",
+      "status": "backlog",
+      "createdAt": "2026-09-08T04:49:02.067Z",
+      "updatedAt": "2026-09-08T04:49:02.067Z",
+      "description": "tools/sync-test (streflop_float_test.cpp) exercises 52,080 streflop libm ops (denormals, branch-cut, huge/tiny) on the current arch and compares bit patterns to the committed references (streflop_results_NEON_arm64, SSE_x86_64) via compare_results.py. SYNC_VALIDATION.md: 52,080/52,080 vs NEON, 47,852/47,852 vs SSE. This is the cheapest determinism gate — must stay bit-exact on any FP/flag/compiler change. Reverse-tracked gate (existing tooling), not new code.",
+      "epic": "macos-layer",
+      "children": []
+    },
+    "SYNC-002": {
+      "id": "SYNC-002",
+      "title": "Fleet libm (dbl-64) parity hash gate passes 9/9 in every release build",
+      "type": "story",
+      "status": "backlog",
+      "createdAt": "2026-09-08T04:51:46.347Z",
+      "updatedAt": "2026-09-08T04:51:46.347Z",
+      "description": "The shipping build swaps the affected streflop dbl-64 objects with gcc-built ones (gcc's -fsingle-precision-constant demotes unsuffixed FP literals in streflop's double libm; clang has no equivalent, so pure-clang diverges up to ~45 ULPs in asin/acos-family results). A 9-function hash harness (scripts/dfp-small.cpp: atan2, sin, cos, tan, floor, fmod, sqrt/log, asin/acos, exp/atan chains) must match the gcc x86-64 reference 9/9; it is a mandatory release-build step (scripts/build-engine.sh + gcc-dbl64-swap.sh). A build that fails it does not ship.",
+      "epic": "macos-layer",
+      "children": []
+    },
+    "SYNC-003": {
+      "id": "SYNC-003",
+      "title": "Synced-code float→short UB sweep matches fleet (gcc-x86) behavior",
+      "type": "story",
+      "status": "backlog",
+      "createdAt": "2026-09-08T04:52:44.179Z",
+      "updatedAt": "2026-09-08T04:52:44.179Z",
+      "description": "Out-of-range float→short conversion is UB; clang-arm64 and gcc-x86 disagreed (real desync in Raptors via COB callin). Defined int32 truncation replacing the narrow cast in: CobInstance.cpp/CobThread.cpp (callin truncation, commit 8a041014a2 + COB fix), IPathController.cpp GetDeltaHeading, GroundMoveType/HoverAirMoveType direct-control heading, LuaSyncedMoveCtrl.SetHeading, LuaSyncedRead.GetFacingFromHeading. Complete register: docs/SYNC_VALIDATION.md Appendix A. Every one is sync-safe (changes behavior only where UB/divergence) and an upstream candidate.",
+      "epic": "macos-layer",
+      "children": []
+    },
+    "GFX-001": {
+      "id": "GFX-001",
+      "title": "GL_PRIMITIVE_RESTART enabled only for strip/loop/fan topologies",
+      "type": "story",
+      "status": "backlog",
+      "createdAt": "2026-09-08T04:52:54.556Z",
+      "updatedAt": "2026-09-08T04:52:54.556Z",
+      "description": "LuaVAOImpl force-enabled restart around every indexed draw incl. hardcoded GL_TRIANGLES Submit(); on Metal-backed GL the restart index 0xffffff forces a per-draw compute index-unroll (KK primitiveTopologyListRestart) = 94% of BAR's draws = the 6.8fps bottleneck. UsePrimitiveRestart(mode) returns true only for LINE_STRIP/LOOP, TRIANGLE_STRIP/FAN (+adjacency); SPRING_LUAVAO_FORCE_RESTART=1 restores old behavior. Commit e34e563829. 6.8→23.1 fps. Upstream candidate (upstream #1).",
+      "epic": "macos-layer",
+      "children": []
+    },
+    "GFX-002": {
+      "id": "GFX-002",
+      "title": "Native Metal present path (Zink→KosmicKrisp→Metal) renders + presents at display-class fps",
+      "type": "story",
+      "status": "backlog",
+      "createdAt": "2026-09-08T04:53:23.761Z",
+      "updatedAt": "2026-09-08T04:53:23.761Z",
+      "description": "GL 4.6 compat on Apple Silicon via pinned Mesa Zink + KosmicKrisp → Metal. Rebuilt present path: GPU-pack PBO-ring readback (present 30ms→~1ms, f53785f4ac), async present + double-buffered IOSurface killing the 60fps cap (35153cbb47), direct unified-memory pixel-buffer present (a1b5f573df, MacPresentDirect=1 default), 6-deep persistent-map upload ring + non-spinning 250µs fence waits (458b4152e2, SPRING_MAC_STREAM_BUFFERING), KK_MATH_MODE=fast default (2c32206212), zink renderpass tracking (patch 0013), panel-native + GPU-pixel-budget render density cap (89aa5f96dd). MacPresentBackend.mm (Platform/Mac) extracted at 895780d717. Loud failure on software-GL fallback (915127907e).",
+      "epic": "macos-layer",
+      "children": []
+    },
+    "GFX-003": {
+      "id": "GFX-003",
+      "title": "Geometry-shader stage probed at init; GS compiles refused when the stage is dead",
+      "type": "story",
+      "status": "backlog",
+      "createdAt": "2026-09-08T04:53:37.016Z",
+      "updatedAt": "2026-09-08T04:53:37.016Z",
+      "description": "Some drivers (incl. Metal-backed) expose a GL >= 3.2 context whose GLSL front-end compiles + links geometry shaders, but the device has no geometry stage → silently draws nothing. ProbeGeometryShaderStage() (GlobalRendering, 92085c2165) really runs a geometry shader at init and stores supportGeometryShaderStage; Shader.cpp refuses GS compiles when the stage is dead (92085c2165) and restores shader uniforms before validating a re-linked program (329cf9f974). BAR does not require GS, so refusing is correct and loud.",
+      "epic": "macos-layer",
+      "children": []
+    },
+    "SYNC-004": {
+      "id": "SYNC-004",
+      "title": "streflop math::floor reproduces x86 cvttss2si saturation semantics on arm64",
+      "type": "story",
+      "status": "backlog",
+      "createdAt": "2026-09-08T04:56:51.773Z",
+      "updatedAt": "2026-09-08T04:56:51.773Z",
+      "description": "Out-of-range float→int is UB; x86 hardware saturates (cvttss2si) and game Lua/COB relies on that value (Raptors desync). streflop math::floor now emulates the x86 cvttss2si semantics on arm64 (carried in the streflop submodule bump, commit 4a01bf411f per SYNC_VALIDATION Appendix A). Any new synced code must not reintroduce raw out-of-range float→int casts.",
+      "epic": "macos-layer",
+      "children": []
+    },
+    "PLAT-001": {
+      "id": "PLAT-001",
+      "title": "Retina mouse coordinate mapping lands clicks + edge-scroll in the exact pixel",
+      "type": "story",
+      "status": "backlog",
+      "createdAt": "2026-09-08T04:57:02.439Z",
+      "updatedAt": "2026-09-08T04:57:02.439Z",
+      "description": "SDL emits mouse events in logical (point) coords; the engine viewport is in backing-pixel coords. Without rescaling, windowed clicks land at half the cursor position on Retina. ScaleMouseCoords maps the last reachable logical coord (sdlW-1) onto the last pixel (viewSize-1) — plain size-ratio scaling tops out 2px short of the right/bottom edge on 2x, which broke edge scrolling (engine edge tests compare against viewSize-1, issue #7). Commit 03d7a6b278. ScaleMouseDelta scales motion deltas by viewSize/sdlSize.",
+      "epic": "macos-layer",
+      "children": []
+    },
+    "PLAT-002": {
+      "id": "PLAT-002",
+      "title": "EdgeMoveWidth=0 disables edge scrolling",
+      "type": "story",
+      "status": "backlog",
+      "createdAt": "2026-09-08T04:57:23.556Z",
+      "updatedAt": "2026-09-08T04:57:23.556Z",
+      "description": "EdgeMoveWidth is declared minimumValue(0.0f) and documented as the % of screen for the edge-scroll band, so 0 should mean OFF. It never did: border = std::max<int>(1, w*edgeMoveWidth) floors the band to 1px, so a pointer parked at x==0 scrolled the camera indefinitely with no input (cost a perf baseline — LESSON-57). Commit 4d2977e7a8 adds an early `return v` when edgeMoveWidth <= 0 in CCamera::GetMoveVectorFromState. Not macOS-specific (any platform). Default 0.02 untouched.",
+      "epic": "macos-layer",
+      "children": []
+    },
+    "PLAT-003": {
+      "id": "PLAT-003",
+      "title": "Generic log repeat-coalescer bounds infolog.txt growth",
+      "type": "story",
+      "status": "done",
+      "createdAt": "2026-09-08T04:57:30.246Z",
+      "updatedAt": "2026-09-08T05:46:36.622Z",
+      "description": "High-frequency structurally-identical log lines (per-event [input] diagnostics, per-stall [stall] warnings) bloat infolog.txt to hundreds of MB over a long session, making it useless as a bug-report attachment. A generic repeat-coalescer in the log backend (rts/System/Log/Backend.cpp, commit b408ad288d) collapses near-identical lines at the one choke point every record passes through: up to 8 tracked signature slots (NUM_SLOTS), numeric tokens collapsed to '#' so only-varying-by-number lines share a signature, 'previous line repeated N more time(s)' rollups, LRU eviction, thread-safe with emit outside the lock. No per-source throttles needed.",
+      "epic": "macos-layer",
+      "children": [],
+      "userStory": {
+        "role": "support engineer collecting a bug report from a BAR player on a long session",
+        "action": "keep the player's infolog.txt small enough to attach",
+        "benefit": "the log stays a useful diagnostic instead of a hundreds-of-MB flood of structurally-identical lines"
+      },
+      "stateHistory": [
+        {
+          "state": "specifying",
+          "timestamp": "2026-09-08T05:37:39.640Z"
+        },
+        {
+          "state": "testing",
+          "timestamp": "2026-09-08T05:42:14.310Z"
+        },
+        {
+          "state": "implementing",
+          "timestamp": "2026-09-08T05:43:27.818Z"
+        },
+        {
+          "state": "validating",
+          "timestamp": "2026-09-08T05:43:37.130Z"
+        },
+        {
+          "state": "done",
+          "timestamp": "2026-09-08T05:46:36.622Z"
+        }
+      ],
+      "rules": [
+        {
+          "id": 0,
+          "text": "At most NUM_SLOTS=8 tracked signatures; a new/distinct line claims a free slot else evicts the least-recently-used slot, flushing that slot's pending tail first",
+          "deleted": false,
+          "createdAt": "2026-09-08T05:40:06.624Z"
+        },
+        {
+          "id": 1,
+          "text": "Signature = section + message with each numeric token collapsed to '#'; lines differing only in numbers share a signature; punctuation-only runs stay verbatim in the signature",
+          "deleted": false,
+          "createdAt": "2026-09-08T05:40:06.835Z"
+        },
+        {
+          "id": 2,
+          "text": "Coalescer decisions are made under the backend mutex but sink emits happen outside it, so a re-entrant sink cannot deadlock",
+          "deleted": false,
+          "createdAt": "2026-09-08T05:40:10.913Z"
+        },
+        {
+          "id": 3,
+          "text": "A matching record is suppressed and counted; every ROLLUP_EVERY=100th suppression emits a 'previous line repeated N more time(s)' rollup at the original level and section; log_backend_flushRepeats emits any residual tail",
+          "deleted": false,
+          "createdAt": "2026-09-08T05:40:11.124Z"
+        }
+      ],
+      "nextRuleId": 4,
+      "examples": [
+        {
+          "id": 0,
+          "text": "5 interleaved input-motion lines + 5 interleaved stall lines -> each pattern passes through once, all 8 suppressed repeats accounted in per-pattern rollups reporting their own sections",
+          "deleted": false,
+          "createdAt": "2026-09-08T05:40:13.929Z"
+        },
+        {
+          "id": 1,
+          "text": "101 near-identical stall warnings (numbers vary) -> exactly 1 full line emitted, 100 suppressed, sum of rollup counts == 100, rollup carries the stall section and original level",
+          "deleted": false,
+          "createdAt": "2026-09-08T05:40:14.139Z"
+        }
+      ],
+      "nextExampleId": 2,
+      "architectureNotes": [
+        {
+          "id": 0,
+          "text": "The coalescer is the generic mechanism that replaces per-source throttles: it sits at the log_backend_record choke point in System/Log/Backend.cpp, so every sink (console, file) benefits automatically and no call site changes. The [stall] throttle previously in GlobalRendering was removed in the same commit (b408ad288d).",
+          "deleted": false,
+          "createdAt": "2026-09-08T05:40:27.200Z"
+        },
+        {
+          "id": 1,
+          "text": "Determinism contract: the coalescer affects only the logging subsystem (System/Log), which is outside the synced simulation — no behavior change under rts/Sim/ or streflop, so multiplayer bit-exactness is untouched. Thread-safety: decisions under a std::mutex, sink emits outside the lock (a sink may re-enter the logger, e.g. FileSink logging a failed fopen).",
+          "deleted": false,
+          "createdAt": "2026-09-08T05:40:30.057Z"
+        }
+      ],
+      "nextNoteId": 2,
+      "attachments": [
+        "spec/attachments/PLAT-003/ast-research-log-coalescer.md"
+      ],
+      "estimate": 3
+    },
+    "PLAT-004": {
+      "id": "PLAT-004",
+      "title": "SDL-queue gesture injection hook for unattended input verification",
+      "type": "story",
+      "status": "backlog",
+      "createdAt": "2026-09-08T04:57:36.638Z",
+      "updatedAt": "2026-09-08T04:57:36.638Z",
+      "description": "OS-level input synthesis (CGEvent) cannot reach the game when the console is locked/headless, blocking unattended verification of input-driven rendering fixes. SPRING_DBG_INJECT=<path> makes InputHandler::PushEvents push a scripted gesture timeline into SDL's own event queue (real input pipeline from SDL_PollEvent onward). The GestureInjector parses a timeline file written after launch: '<t_sec> move x y' / 'down x y [button]' / 'up x y [button]' / 'wheel dy', '#' comments, y-down logical window coords, pushed in order at the next pump. Commit d9938d94be. Pair with SPRING_DBG_INPUT=1 to log every received/mapped event (input-method source, precise/pixel vs line deltas).",
+      "epic": "macos-layer",
+      "children": []
+    },
+    "PLAT-005": {
+      "id": "PLAT-005",
+      "title": "Window modes, on-screen sizing, and cursor confinement on macOS",
+      "type": "story",
+      "status": "backlog",
+      "createdAt": "2026-09-08T04:58:03.825Z",
+      "updatedAt": "2026-09-08T04:58:03.825Z",
+      "description": "Window modes, on-screen sizing, and edge-scroll cursor confinement on macOS. Window mode fixes (99cf5ba2ce, 20c4307b0b): coverage/input extent/display pinning for fullscreen + borderless. Persist logical (point) size not backing-pixel (b57d730651). Retina winPosY_bl corrected to use winSizeYpt (29bd947106). WindowTitle config with {version} placeholder (3a31eab517, cross-platform). Optionally show true render resolution in title (29bd947106). WindowBorderless handling (f0d789bc51, d4f2459ce4).",
+      "epic": "macos-layer",
+      "children": []
+    },
+    "BUILD-001": {
+      "id": "BUILD-001",
+      "title": "One-command reproducible build + release pipeline (make app/certify/release)",
+      "type": "story",
+      "status": "backlog",
+      "createdAt": "2026-09-08T04:58:14.624Z",
+      "updatedAt": "2026-09-08T04:58:14.624Z",
+      "description": "Reproducible one-command pipeline: make app (BAR launcher pkg, headless-safe) / engine / engine-dist / certify / release. packaging/release-build.sh builds the pinned Mesa Zink+KosmicKrisp driver from the pinned commit + patches/mesa/ (provenance-stamped, cached), builds the engine with the deterministic-FP config, runs the determinism gates (libm 9/9 + streflop sync-test), stages/signs/notarizes the bundle + styled DMG. Tiers mirror upstream Recoil CI (build vs validation). Commits: e240ca473b, 863c4126dc, 337cb7ed90, a49a8ecc52.",
+      "epic": "macos-layer",
+      "children": []
+    },
+    "BUILD-002": {
+      "id": "BUILD-002",
+      "title": "Engine version pinned to the live-fleet release (version identity is a multiplayer requirement)",
+      "type": "story",
+      "status": "backlog",
+      "createdAt": "2026-09-08T04:58:45.759Z",
+      "updatedAt": "2026-09-08T04:58:45.759Z",
+      "description": "Lockstep multiplayer requires every client to run the same engine version doing the same math. Shipping builds are made from pinned `macos-<version>` branches = the upstream release tag + the macOS layer (no stray upstream drift). ConfigureVersion.cmake prefers a PINNED_VERSION file over git-describe (f5c2f63347), then auto-derives from the nearest [0-9]* release tag (a70da5d66c) so the engine reports exactly the base release (e.g. 2026.07.04), not a dev string. docs/VERSIONS.md pins engine, Mesa commit, SPIRV-LLVM-Translator, pr-downloader, macOS floor — never bump a pin silently. Current tree is the 2026.07.04 engine lane.",
+      "epic": "macos-layer",
+      "children": []
+    },
+    "LAUNCH-001": {
+      "id": "LAUNCH-001",
+      "title": "BAR Launcher: consent, content download/update, remote message system",
+      "type": "story",
+      "status": "backlog",
+      "createdAt": "2026-09-08T04:59:25.753Z",
+      "updatedAt": "2026-09-08T04:59:25.753Z",
+      "description": "Drag-to-install BAR Launcher.app: explicit first-run consent dialog (default Quit, single-source content-server display, centered, disclaims responsibility), downloads Beyond All Reason from the official content network via launcher.sh (non-blocking tmutil, progress window), keeps it updated, launches into the lobby. Remote message system: versioned dialogs, version-targeted announcements + kill-switch, rich multi-button dialogs, suppression; fetched over pinned-TLS GitHub with size cap, HTML-sanitized; served from message-config/ assembled by CI. Online play enabled by default in source builds, disabled in released builds while approval is sought (server address neutralized to loopback). make test runs packaging/test/{message-check,launcher,dialog-center}-test.sh.",
+      "epic": "macos-layer",
+      "children": []
+    }
+  },
+  "states": {
+    "backlog": [
+      "SYNC-001",
+      "SYNC-002",
+      "SYNC-003",
+      "GFX-001",
+      "GFX-002",
+      "GFX-003",
+      "SYNC-004",
+      "PLAT-001",
+      "PLAT-002",
+      "PLAT-004",
+      "PLAT-005",
+      "BUILD-001",
+      "BUILD-002",
+      "LAUNCH-001"
+    ],
+    "specifying": [],
+    "testing": [],
+    "implementing": [],
+    "validating": [],
+    "done": [
+      "FOUND-001",
+      "PLAT-003"
+    ],
+    "blocked": []
+  },
+  "prefixCounters": {
+    "SYNC": 4,
+    "GFX": 3,
+    "PLAT": 5,
+    "BUILD": 2,
+    "LAUNCH": 1
+  }
+}

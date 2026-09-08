@@ -1,0 +1,13 @@
+{
+  "agent": "claude",
+  "tools": {
+    "test": {
+      "command": "cmake --build build --target check"
+    },
+    "qualityCheck": {
+      "commands": [
+        "cmake --build build --target tests"
+      ]
+    }
+  }
+}

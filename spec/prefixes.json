@@ -1,0 +1,34 @@
+{
+  "prefixes": {
+    "FOUND": {
+      "prefix": "FOUND",
+      "description": "Foundation Event Storm tasks",
+      "createdAt": "2026-09-07T11:52:55.941Z"
+    },
+    "SYNC": {
+      "prefix": "SYNC",
+      "description": "Multiplayer determinism: bit-exact sim, streflop, libm parity, float-to-int semantics, sync gates",
+      "createdAt": "2026-09-08T04:03:27.575Z"
+    },
+    "GFX": {
+      "prefix": "GFX",
+      "description": "Native Metal graphics path: LuaVAO, shaders, driver stack, readback/present, windowing",
+      "createdAt": "2026-09-08T04:26:22.941Z"
+    },
+    "PLAT": {
+      "prefix": "PLAT",
+      "description": "Platform/input/windowing on macOS: Retina mapping, edge scroll, window modes, clipboard, Cmd+Q guard, log coalescer",
+      "createdAt": "2026-09-08T04:41:41.443Z"
+    },
+    "BUILD": {
+      "prefix": "BUILD",
+      "description": "Build/release pipeline: driver build, determinism gates, packaging, signing, version pinning",
+      "createdAt": "2026-09-08T04:41:44.541Z"
+    },
+    "LAUNCH": {
+      "prefix": "LAUNCH",
+      "description": "BAR launcher app + game content distribution: consent dialog, remote message system, content download, online-enable flag, message-config",
+      "createdAt": "2026-09-08T04:59:17.972Z"
+    }
+  }
+}
