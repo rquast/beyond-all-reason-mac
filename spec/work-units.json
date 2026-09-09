@@ -2,7 +2,7 @@
   "version": "0.7.1",
   "meta": {
     "version": "1.0.0",
-    "lastUpdated": "2026-09-08T05:46:36.622Z"
+    "lastUpdated": "2026-09-09T01:26:32.232Z"
   },
   "workUnits": {
     "FOUND-001": {
@@ -91,12 +91,82 @@
       "id": "SYNC-003",
       "title": "Synced-code float→short UB sweep matches fleet (gcc-x86) behavior",
       "type": "story",
-      "status": "backlog",
+      "status": "done",
       "createdAt": "2026-09-08T04:52:44.179Z",
-      "updatedAt": "2026-09-08T04:52:44.179Z",
+      "updatedAt": "2026-09-09T01:26:32.232Z",
       "description": "Out-of-range float→short conversion is UB; clang-arm64 and gcc-x86 disagreed (real desync in Raptors via COB callin). Defined int32 truncation replacing the narrow cast in: CobInstance.cpp/CobThread.cpp (callin truncation, commit 8a041014a2 + COB fix), IPathController.cpp GetDeltaHeading, GroundMoveType/HoverAirMoveType direct-control heading, LuaSyncedMoveCtrl.SetHeading, LuaSyncedRead.GetFacingFromHeading. Complete register: docs/SYNC_VALIDATION.md Appendix A. Every one is sync-safe (changes behavior only where UB/divergence) and an upstream candidate.",
       "epic": "macos-layer",
-      "children": []
+      "children": [],
+      "stateHistory": [
+        {
+          "state": "specifying",
+          "timestamp": "2026-09-09T00:46:54.788Z"
+        },
+        {
+          "state": "testing",
+          "timestamp": "2026-09-09T01:21:47.810Z"
+        },
+        {
+          "state": "implementing",
+          "timestamp": "2026-09-09T01:24:18.472Z"
+        },
+        {
+          "state": "validating",
+          "timestamp": "2026-09-09T01:25:20.539Z"
+        },
+        {
+          "state": "done",
+          "timestamp": "2026-09-09T01:26:32.232Z"
+        }
+      ],
+      "userStory": {
+        "role": "macOS port maintainer",
+        "action": "pin the float→short UB-sweep gate test (testClampRad) to the port's defined float→int→short conversion",
+        "benefit": "the whole sync-UB gate passes on arm64 with the fleet's (gcc-x86) values and no platform-dependent UB remains in the sweep or its gate"
+      },
+      "rules": [
+        {
+          "id": 0,
+          "text": "The expected TA-short values must match the fleet's gcc-x86 behavior, which is float->int->short (cvttss2si then narrow): short(nextafter(TWOPI,-inf)*RAD2TAANG) == -1 (65536 wraps), short(ClampRadPi(-PI)*RAD2TAANG) == -32768, short(ClampRadPi(nextafter(PI,-inf))*RAD2TAANG) == 32767.",
+          "deleted": false,
+          "createdAt": "2026-09-09T01:07:52.751Z"
+        },
+        {
+          "id": 1,
+          "text": "Gate test testClampRad must pin the port's DEFINED conversion (float->int32->short, as used at every sweep site in IPathController/GroundMoveType/HoverAirMoveType/LuaSyncedMoveCtrl/LuaSyncedRead/CobInstance), never a raw float->short cast: the raw cast is UB when the value leaves short's range and produced platform-dependent results (65535 vs -1) for the same bit pattern on arm64.",
+          "deleted": false,
+          "createdAt": "2026-09-09T01:07:53.010Z"
+        }
+      ],
+      "nextRuleId": 2,
+      "examples": [
+        {
+          "id": 0,
+          "text": "testClampRad line 47: static_cast<short>(ClampRad(nextafter(TWOPI,-inf)) * RAD2TAANG) must go through int32 (the port's defined conversion) and equal short(-1); the raw cast is UB and the test currently fails with '-1 == -1' on arm64 (-O2)",
+          "deleted": false,
+          "createdAt": "2026-09-09T01:08:04.912Z"
+        },
+        {
+          "id": 1,
+          "text": "Engine sweep sites already pin the defined conversion (verified present in tree): CobInstance.cpp RadAngleToCobShort short(int(radAngle*RAD2TAANG)); IPathController.cpp x3 short(int(...)); GroundMoveType.cpp UpdateDirectControl x2; HoverAirMoveType.cpp UpdateHeading x2; LuaSyncedMoveCtrl.cpp SetHeading (short)(int)luaL_checknumber; LuaSyncedRead.cpp GetFacingFromHeading (short)(int)luaL_checknumber",
+          "deleted": false,
+          "createdAt": "2026-09-09T01:08:05.099Z"
+        }
+      ],
+      "nextExampleId": 2,
+      "estimate": 2,
+      "architectureNotes": [
+        {
+          "id": 0,
+          "text": "Root cause of the testClampRad failure: line 47 uses a raw float→short cast, which is UB once the value leaves short's range. On arm64 -O2 the compiler lowers it to fcvtzs-with-saturation (65535.996 → 65535) which neither fits a short nor equals the fleet's value; on x86 the same expression lowers as cvttss2si-into-32-bit-then-narrow (65535 → 65535 wraps to -1). The engine's sweep already pins the defined float→int32→short form at every site (8a041014a2 + 7104ab1f76), so the gate test must use the same form. No rts/ code changes needed — engine sweep sites verified present in tree; only the test file changes.",
+          "deleted": false,
+          "createdAt": "2026-09-09T01:12:56.933Z"
+        }
+      ],
+      "nextNoteId": 1,
+      "attachments": [
+        "spec/attachments/SYNC-003/ast-research-float-short-casts.md"
+      ]
     },
     "GFX-001": {
       "id": "GFX-001",
@@ -323,7 +393,6 @@
     "backlog": [
       "SYNC-001",
       "SYNC-002",
-      "SYNC-003",
       "GFX-001",
       "GFX-002",
       "GFX-003",
@@ -342,7 +411,8 @@
     "validating": [],
     "done": [
       "FOUND-001",
-      "PLAT-003"
+      "PLAT-003",
+      "SYNC-003"
     ],
     "blocked": []
   },

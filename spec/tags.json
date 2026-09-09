@@ -27,6 +27,10 @@
         {
           "name": "@log-backend",
           "description": "Log backend subsystem (System/Log): backend choke point, sinks, filters, repeat coalescer"
+        },
+        {
+          "name": "@sync-gate",
+          "description": "Multiplayer-determinism gate: float->short UB sweep, testClampRad, sync validation registry"
         }
       ]
     },
@@ -113,6 +117,6 @@
     }
   ],
   "statistics": {
-    "lastUpdated": "2026-09-08T05:39:15.295Z"
+    "lastUpdated": "2026-09-09T01:25:33.460Z"
   }
 }
