@@ -2,7 +2,7 @@
   "version": "0.7.1",
   "meta": {
     "version": "1.0.0",
-    "lastUpdated": "2026-09-09T04:23:57.964Z"
+    "lastUpdated": "2026-09-09T06:53:05.497Z"
   },
   "workUnits": {
     "FOUND-001": {
@@ -470,6 +470,99 @@
       "description": "Drag-to-install BAR Launcher.app: explicit first-run consent dialog (default Quit, single-source content-server display, centered, disclaims responsibility), downloads Beyond All Reason from the official content network via launcher.sh (non-blocking tmutil, progress window), keeps it updated, launches into the lobby. Remote message system: versioned dialogs, version-targeted announcements + kill-switch, rich multi-button dialogs, suppression; fetched over pinned-TLS GitHub with size cap, HTML-sanitized; served from message-config/ assembled by CI. Online play enabled by default in source builds, disabled in released builds while approval is sought (server address neutralized to loopback). make test runs packaging/test/{message-check,launcher,dialog-center}-test.sh.",
       "epic": "macos-layer",
       "children": []
+    },
+    "LAUNCH-002": {
+      "id": "LAUNCH-002",
+      "title": "Online play enabled: remove the online-disable machinery",
+      "type": "story",
+      "status": "done",
+      "createdAt": "2026-09-09T04:58:48.552Z",
+      "updatedAt": "2026-09-09T06:53:05.497Z",
+      "description": "Remove the code that disables the ability to connect to BAR's internet/lobby servers (the 'seeking approval from the maintainers' posture): the --enable/--disable-online flags + endpoint-neutering in release-build.sh, the launcher's online-disabled notice + ack, the consent-dialog --notice mode, the Makefile ONLINE wiring, README note, and their tests. Builds connect to the real lobby by default and there is no disable switch.",
+      "epic": "macos-layer",
+      "children": [],
+      "stateHistory": [
+        {
+          "state": "specifying",
+          "timestamp": "2026-09-09T04:58:51.672Z"
+        },
+        {
+          "state": "testing",
+          "timestamp": "2026-09-09T06:06:49.791Z"
+        },
+        {
+          "state": "implementing",
+          "timestamp": "2026-09-09T06:18:51.565Z"
+        },
+        {
+          "state": "validating",
+          "timestamp": "2026-09-09T06:46:13.581Z"
+        },
+        {
+          "state": "done",
+          "timestamp": "2026-09-09T06:53:05.497Z"
+        }
+      ],
+      "userStory": {
+        "role": "BAR macOS player",
+        "action": "start the game and connect to the official lobby / online play",
+        "benefit": "I can play internet games against the community with no build flag or opt-in step"
+      },
+      "rules": [
+        {
+          "id": 0,
+          "text": "The staged chobby_config.json keeps the server endpoint from the canonical dist_cfg as-is: nothing in the build or packaging path rewrites the lobby server address/port.",
+          "deleted": false,
+          "createdAt": "2026-09-09T04:59:02.072Z"
+        },
+        {
+          "id": 1,
+          "text": "The build pipeline exposes no online-disable switch: --enable-online, --disable-online, BAR_ONLINE, and Makefile ONLINE= all stop existing; every packaged build ships the lobby endpoint untouched.",
+          "deleted": false,
+          "createdAt": "2026-09-09T04:59:57.518Z"
+        }
+      ],
+      "nextRuleId": 2,
+      "examples": [
+        {
+          "id": 0,
+          "text": "A packaged build connects to the official lobby: the staged chobby_config.json keeps the exact server address+port from the canonical dist_cfg, so sign-in and the online menus reach the live servers instead of a dead loopback endpoint.",
+          "deleted": false,
+          "createdAt": "2026-09-09T05:02:19.277Z"
+        },
+        {
+          "id": 1,
+          "text": "First launch of a packaged build shows no 'ONLINE PLAY IS DISABLED' notice (no .online-play-disabled marker ships, so the launcher has nothing to gate on); the remote message check and the content-disclaimer still appear as before, then the game launches.",
+          "deleted": false,
+          "createdAt": "2026-09-09T05:02:19.475Z"
+        },
+        {
+          "id": 2,
+          "text": "`make app` / `make release` run without any ONLINE variable or --disable-online being passed, and the README no longer tells users to build with online play disabled.",
+          "deleted": false,
+          "createdAt": "2026-09-09T05:02:38.075Z"
+        },
+        {
+          "id": 3,
+          "text": "release-build.sh given --disable-online (or --enable-online, or env BAR_ONLINE=1) refuses the argument as unknown and exits non-zero — there is no way to steer a build at the old loopback endpoint anymore.",
+          "deleted": false,
+          "createdAt": "2026-09-09T05:02:38.290Z"
+        }
+      ],
+      "nextExampleId": 6,
+      "estimate": 3,
+      "architectureNotes": [
+        {
+          "id": 0,
+          "text": "Deletion-only change across packaging/: release-build.sh (drop ENABLE_ONLINE + flags + neuter block), launcher.sh (drop marker gate + notice + ack), consent-dialog.swift (drop --notice mode — its only caller), Makefile (drop ONLINE var), README.md (drop disabled-release note), and the online-disabled cases in packaging/test/launcher-test.sh + dialog-center-test.sh. No new behavior; the dist_cfg endpoint becomes the shipped endpoint. Verification: bash -n on edited scripts, `make test` harnesses, and a staging dry-run asserting chobby_config.json server == dist_cfg value.",
+          "deleted": false,
+          "createdAt": "2026-09-09T05:06:27.345Z"
+        }
+      ],
+      "nextNoteId": 1,
+      "attachments": [
+        "spec/attachments/LAUNCH-002/ast-research-online-disable-machinery.md"
+      ]
     }
   },
   "states": {
@@ -495,7 +588,8 @@
       "FOUND-001",
       "PLAT-003",
       "SYNC-003",
-      "SYNC-004"
+      "SYNC-004",
+      "LAUNCH-002"
     ],
     "blocked": []
   },
@@ -504,6 +598,6 @@
     "GFX": 3,
     "PLAT": 5,
     "BUILD": 2,
-    "LAUNCH": 1
+    "LAUNCH": 2
   }
 }

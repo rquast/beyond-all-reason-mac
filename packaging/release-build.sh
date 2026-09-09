@@ -72,21 +72,12 @@ PORTVER="$(cat "$PKG/PORT_VERSION" 2>/dev/null | tr -d '[:space:]')"
 #            and dylib closure, no game configuration or branding. For any
 #            Spring/Recoil game community, or for building other helpers on.
 PROFILE=bar
-# Online play (bar profile): **DISABLED by default, and that is a standing rule,
-# not a per-release choice** (user decision, 2026-08-08). Every release so far has
-# been respun with --disable-online before shipping — v0.11 and v0.12 both were —
-# so the default was a trap: it made the safe outcome depend on someone
-# remembering a flag, and forgetting it publishes a build that reaches BAR's real
-# lobby servers. The default now matches the rule.
-#
-# Disabled means the staged chobby_config.json points the lobby at an unreachable
-# loopback endpoint and the launcher shows a once-per-version notice. Engine-level
-# networking (direct/LAN) is untouched either way.
-#
-# --enable-online (or BAR_ONLINE=1) is a DELIBERATE opt-in and must not be used
-# for a public artifact without an explicit decision to seek approval from BAR's
-# maintainers first; see docs/OUTSTANDING.md on the online-play posture.
-ENABLE_ONLINE="${BAR_ONLINE:-0}"
+# Online play (bar profile): ENABLED. The staged chobby_config.json carries the
+# lobby endpoint from the canonical dist_cfg as-is (extract-launcher-config.py
+# is the only writer of it); nothing in this pipeline rewrites or blocks it.
+# A former --disable-online switch (which pointed the lobby at an unreachable
+# loopback endpoint) was removed 2026-09-09 once approval to reach BAR's
+# community servers was in place.
 # Message config source (bar profile): where the shipped launcher fetches
 # messages.json each launch. Default = the port's GitHub repo. Override with
 # --messages-config <https-url> or --messages-local <path> (a local file,
@@ -124,8 +115,6 @@ while [ $# -gt 0 ]; do
     --version) VERSION=$2; VERSION_EXPLICIT=1; shift 2;;
     --port-version) PORTVER=$2; shift 2;;
     --profile) PROFILE=$2; shift 2;;
-    --enable-online) ENABLE_ONLINE=1; shift;;   # DELIBERATE opt-in; never for a public artifact
-    --disable-online) ENABLE_ONLINE=0; shift;;  # now the default; kept for explicitness
     --messages-config) MESSAGES_CONFIG=$2; shift 2;;
     --messages-local)
       [ -f "$2" ] || { echo "FATAL: --messages-local $2: no such file"; exit 2; }
@@ -346,29 +335,10 @@ if [ "$PROFILE" = "bar" ]; then
     echo "!!  Do NOT distribute it. Do NOT use it for online play."
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
   fi
-  if [ "$ENABLE_ONLINE" != "1" ]; then
-    # Neuter the lobby-server endpoint so online play cannot connect:
-    #   host: online-play-disabled.localhost — .localhost is a reserved TLD
-    #     (RFC 6761) that resolvers MUST map to loopback, so a connection can
-    #     never leave the machine (no ISP NXDOMAIN-hijack risk) and the name
-    #     can never be registered. Descriptive too — the lobby prints it.
-    #   port: 1 (tcpmux) — a privileged port nothing on a normal Mac listens
-    #     on, so the loopback connect is refused INSTANTLY (no hang, no chance
-    #     of hitting a local dev server that might sit on a common port).
-    # The marker file makes the launcher show the "online play disabled" notice.
-    python3 - "$RESOURCES/chobby_config.json" <<'NEUTER'
-import json, sys
-p = sys.argv[1]
-cfg = json.load(open(p))
-cfg.setdefault("server", {})["address"] = "online-play-disabled.localhost"
-cfg["server"]["port"] = 1
-json.dump(cfg, open(p, "w"), indent=2)
-NEUTER
-    touch "$RESOURCES/.online-play-disabled"
-    echo "online play: DISABLED (--disable-online / BAR_ONLINE=0)"
-  else
-    echo "online play: ENABLED (default)"
-  fi
+  # The chobby_config.json written above (from the canonical dist_cfg) is the
+  # shipped lobby endpoint, verbatim — online play is enabled; the pipeline
+  # never rewrites it.
+  echo "online play: ENABLED (staged chobby_config.json carries the dist_cfg endpoint)"
   # Bake the message-config source for the shipped launcher (launcher.sh reads
   # this staged file; BAR_MESSAGE_CONFIG_URL still overrides at runtime).
   printf '%s' "$MESSAGES_CONFIG" > "$RESOURCES/.message-config-url"

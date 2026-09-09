@@ -26,10 +26,8 @@
 IDENTITY ?=
 NOTARY_PROFILE ?=
 VERSION  ?=
-ONLINE   ?=
 
 VERSION_ARG := $(if $(VERSION),--version "$(VERSION)",)
-ONLINE_ARG  := $(if $(filter 0,$(ONLINE)),--disable-online,)
 
 .DEFAULT_GOAL := help
 .PHONY: help app engine-dist certify release engine test clean-artifacts
@@ -44,16 +42,15 @@ help:
 	@echo "                 IDENTITY=\"Developer ID Application: NAME (TEAMID)\" NOTARY_PROFILE=<profile> make release"
 	@echo "  make engine    just the engine binary (no bundle)"
 	@echo "  make clean-artifacts   remove staged bundles/zips/dmgs"
-	@echo "  ONLINE=0 make ...      disable online play (enabled by default)"
 
 app:
-	packaging/release-build.sh $(VERSION_ARG) $(ONLINE_ARG)
+	packaging/release-build.sh $(VERSION_ARG)
 
 engine-dist:
 	packaging/release-build.sh --profile engine $(VERSION_ARG)
 
 certify:
-	packaging/release-build.sh --certify $(VERSION_ARG) $(ONLINE_ARG)
+	packaging/release-build.sh --certify $(VERSION_ARG)
 
 release:
 	@test -n "$(IDENTITY)" || { echo "release: set IDENTITY=\"Developer ID Application: ...\" (and NOTARY_PROFILE for notarization)"; exit 2; }
@@ -61,7 +58,7 @@ release:
 	  --certify \
 	  --identity "$(IDENTITY)" \
 	  $(if $(NOTARY_PROFILE),--notary-profile "$(NOTARY_PROFILE)",) \
-	  $(VERSION_ARG) $(ONLINE_ARG)
+	  $(VERSION_ARG)
 
 engine:
 	scripts/build-engine.sh
@@ -69,6 +66,7 @@ engine:
 test:
 	packaging/test/message-check-test.sh
 	packaging/test/launcher-test.sh
+	packaging/test/online-enabled-test.sh
 	packaging/test/dialog-center-test.sh   # shows real windows; skips without a screen
 
 clean-artifacts:

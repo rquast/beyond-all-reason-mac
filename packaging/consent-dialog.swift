@@ -1,15 +1,12 @@
 // Recoil Engine — user dialogs for the BAR launcher.
 //
-// Two modes:
-//   (default)        first-run consent, shown once before anything downloads:
-//                    the launcher is about to fetch a game (Beyond All Reason)
-//                    from a third-party content network and the user must opt
-//                    in. "Quit" is the default (Return) so the safe choice is
-//                    the effortless one.
-//                    Usage: consent-dialog --server <host>
-//                    Exit: 0 = "Accept Risk and Run", 1 = "Quit"/closed.
-//   --notice <text>  informational notice (e.g. online play disabled), single
-//                    OK button. Exit: always 0.
+// (default)        first-run consent, shown once before anything downloads:
+//                  the launcher is about to fetch a game (Beyond All Reason)
+//                  from a third-party content network and the user must opt
+//                  in. "Quit" is the default (Return) so the safe choice is
+//                  the effortless one.
+//                  Usage: consent-dialog --server <host>
+//                  Exit: 0 = "Accept Risk and Run", 1 = "Quit"/closed.
 import AppKit
 
 func arg(_ name: String) -> String? {
@@ -80,25 +77,6 @@ func present(_ alert: NSAlert) -> NSApplication.ModalResponse {
 
 let alert = NSAlert()
 alert.messageText = "Recoil Engine"
-
-if let notice = arg("--notice") {
-    alert.informativeText = notice
-    alert.alertStyle = .informational
-    // right-aligned signature below the message (true bottom-right, not
-    // spaces). NSAlert lays the accessory across its full text column (~500pt
-    // wide for this message), so a full-width right-aligned label sits at the
-    // right edge; .width autoresizing keeps it flush if the alert resizes.
-    let sig = NSTextField(labelWithString: "— Ben")
-    sig.alignment = .right
-    sig.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
-    sig.textColor = .secondaryLabelColor
-    sig.frame = NSRect(x: 0, y: 0, width: 500, height: 18)
-    sig.autoresizingMask = [.width]
-    alert.accessoryView = sig
-    alert.addButton(withTitle: "OK")
-    _ = present(alert)
-    exit(0)
-}
 
 let server = arg("--server") ?? "the BAR content network"
 alert.informativeText =

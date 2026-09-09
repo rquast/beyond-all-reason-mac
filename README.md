@@ -208,13 +208,10 @@ make release     # certified + Developer ID signed + notarized (needs
 make engine      # just the engine binary, with the sync gates
 ```
 
-**Released builds currently ship with online play disabled** (the online
-lobby resolves to an unreachable loopback endpoint; LAN and local play are
-unaffected) while approval to connect to BAR's community servers is sought.
-Source builds default to online enabled; to reproduce the released
-configuration, pass `ONLINE=0` (e.g. `ONLINE=0 make app`) or
-`packaging/release-build.sh --disable-online`. Please do not distribute
-online-enabled builds until that approval is in place.
+**Released builds connect to the official lobby (online play enabled).** The
+staged `chobby_config.json` carries the lobby endpoint from the canonical
+`chobby` dist_cfg verbatim, so sign-in and the online menus reach BAR's live
+servers. LAN and local play work as always.
 
 What the build does, in order: builds the Mesa Zink+KosmicKrisp driver from
 the pinned upstream commit + `patches/mesa/` (provenance-stamped, skipped

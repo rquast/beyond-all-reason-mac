@@ -9,8 +9,10 @@
 # The bug this exists for (2026-07-24): consent-dialog centred its NSAlert BEFORE
 # the alert had laid itself out. An un-laid-out alert window is ~260pt wide;
 # runModal() then grows it to ~520pt to the RIGHT of a fixed origin, landing the
-# "online play disabled" and download-consent dialogs ~130pt right of centre,
-# while the message-check panel (which sizes itself first) looked correct.
+# pre-game dialogs ~130pt right of centre, while the message-check panel (which
+# sizes itself first) looked correct. (Historically that meant the download-
+# consent dialog and — back then — the online-disabled notice; the notice is
+# gone as of LAUNCH-002.)
 #
 # NB this test SHOWS REAL WINDOWS and takes focus for a second at a time — it
 # needs a logged-in GUI session (it skips cleanly without one), and you should
@@ -101,9 +103,10 @@ check() {
 
 echo "== consent dialogs (the reported bug: NSAlert sized after being centred) =="
 check "download consent" "$WORK/consent-dialog" --server "repos-cdn.beyondallreason.dev"
-check "online-disabled notice" "$WORK/consent-dialog" --notice "ONLINE PLAY IS DISABLED in this build while I seek approval from the creators of Beyond All Reason to connect to their community servers.
-
-The game opens on a sign-in screen first — press Cancel to reach everything that works offline: skirmish against AI, replays, and local-network (LAN) games."
+# LAUNCH-002: --notice was the online-disabled notice (the notice is gone, the
+# mode retired with its only caller). Passing it must fall through to the
+# download-consent dialog and still be centred — not crash, not blank-exit.
+check "download consent (--notice arg now unknown)" "$WORK/consent-dialog" --notice "leftover arg"
 
 echo "== the other pre-game windows =="
 check "error dialog" "$WORK/error-dialog" --title "BAR Launcher" \

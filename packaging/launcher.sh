@@ -233,9 +233,7 @@ HELPER="$HERE/progress-window"
 # with consent, which was the old skip-the-disclaimer bug). Bump a *_VERSION
 # to re-show that dialog once.
 CONSENT_VERSION="1"
-NOTICE_VERSION="1"
 CONSENT_ACK="$WRITEDIR/.consent-ack"
-NOTICE_ACK="$WRITEDIR/.notice-ack"
 MESSAGE_SEEN="$WRITEDIR/.message-seen"
 # Remote message config (announcements / kill-switch). Source baked at build
 # time (release-build.sh --messages-config/--messages-local -> staged
@@ -263,7 +261,7 @@ if [ "${BAR_SKIP_CONTENT_CHECK:-0}" != "1" ]; then
   if [ "${BAR_ASSUME_CONSENT:-0}" != "1" ]; then
     # 1) REMOTE messages (announcements + kill-switch for bad builds).
     #    Fail-open by design: offline / config host down -> exit 0, continue.
-    #    THIS is exactly why the disclaimer (step 3) is LOCAL and hardcoded —
+    #    THIS is exactly why the disclaimer (step 2) is LOCAL and hardcoded —
     #    a flaky connection must never be able to skip it. A blocking message
     #    returns 2 -> quit.
     if [ -x "$HERE/message-check" ]; then
@@ -272,19 +270,7 @@ if [ "${BAR_SKIP_CONTENT_CHECK:-0}" != "1" ]; then
       [ "$?" = "2" ] && exit 0
     fi
     if [ -x "$HERE/consent-dialog" ]; then
-      # 2) ONLINE PLAY IS DISABLED notice — LOCAL, shown once per NOTICE_VERSION.
-      if [ -f "$RES/.online-play-disabled" ] && \
-         [ "$(cat "$NOTICE_ACK" 2>/dev/null)" != "$NOTICE_VERSION" ]; then
-        "$HERE/consent-dialog" --notice "ONLINE PLAY IS DISABLED in this build while I seek approval from the creators of Beyond All Reason to connect to their community servers.
-
-The game opens on a sign-in screen first — press Cancel to reach everything that works offline: skirmish against AI, replays, and local-network (LAN) games.
-
-If you do try to sign in or open an online menu, it will simply fail to reach the server — there is no in-game message explaining why, because online play is blocked outside the game, not inside it.
-
-I hope online play can be enabled very soon." || true
-        echo "$NOTICE_VERSION" > "$NOTICE_ACK"
-      fi
-      # 3) DISCLAIMER / consent — LOCAL and hardcoded (never network-gated).
+      # 2) DISCLAIMER / consent — LOCAL and hardcoded (never network-gated).
       #    Shown once per CONSENT_VERSION; tracked by .consent-ack (independent
       #    of content state). Quit exits. server shown = the host
       #    download-content.sh actually fetches from (single source of truth).

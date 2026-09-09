@@ -25,6 +25,10 @@
           "description": "Foundation / project bootstrap work (event storm, foundation.json, tags)"
         },
         {
+          "name": "@launcher",
+          "description": "BAR macOS launcher + packaging layer: launcher.sh, consent/message/progress dialogs, release pipeline, content download"
+        },
+        {
           "name": "@log-backend",
           "description": "Log backend subsystem (System/Log): backend choke point, sinks, filters, repeat coalescer"
         },
@@ -117,6 +121,6 @@
     }
   ],
   "statistics": {
-    "lastUpdated": "2026-09-09T01:25:33.460Z"
+    "lastUpdated": "2026-09-09T06:51:44.922Z"
   }
 }

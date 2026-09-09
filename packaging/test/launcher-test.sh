@@ -2,10 +2,11 @@
 # launcher-test.sh — integration harness for launcher.sh startup gating.
 # Stages a fake .app whose helpers (message-check, consent-dialog, spring, …)
 # are recording stubs, then drives the REAL launcher through every path:
-# versioned consent/notice acks, message-check kill-switch, quit handling,
-# assume-consent + skip escapes, and the online-disabled marker. No GUI, no
-# network, no engine. This is the coverage the original "disclaimer skipped
-# because content already existed" bug needed.
+# versioned consent acks, message-check kill-switch, quit handling,
+# assume-consent + skip escapes, and a legacy .online-play-disabled marker
+# that must now be ignored (the online-disabled notice is gone, LAUNCH-002).
+# No GUI, no network, no engine. This is the coverage the original
+# "disclaimer skipped because content already existed" bug needed.
 set -uo pipefail
 PKG="$(cd "$(dirname "$0")/.." && pwd)"
 ROOT=$(mktemp -d)
@@ -34,8 +35,11 @@ S
 cat > "$MACOS/consent-dialog" <<'S'
 #!/bin/bash
 case "$*" in
-  *--notice*) echo "consent-notice" >> "$CALLS"; exit 0;;
   *--server*) echo "consent-server" >> "$CALLS"; exit ${STUB_CONSENT_EXIT:-0};;
+  # any other invocation (e.g. a regression that calls a --notice dialog) is
+  # RECORDED so the no-notice assertion below catches it; exit 0 keeps the
+  # run going so the rest of the assertions still mean something
+  *) echo "consent-unknown" >> "$CALLS"; echo "  (args: $*)" >> "$CALLS"; exit 0;;
 esac
 S
 cat > "$MACOS/spring" <<'S'
@@ -79,24 +83,23 @@ bad() { fail=$((fail+1)); printf "  FAIL %s\n" "$1"; [ -n "${2:-}" ] && printf "
 run() { : > "$CALLS"; local wd="$1"; shift; timeout 15 env "$@" BAR_WRITEDIR_OVERRIDE="$wd" \
         "$MACOS/launcher" >/dev/null 2>&1 </dev/null; [ $? -eq 124 ] && echo "TIMEOUT" >> "$CALLS"; }
 has()  { grep -qx "$1" "$CALLS"; }
+hasre(){ grep -qE "$1" "$CALLS"; }
 calls(){ tr '\n' ',' < "$CALLS"; }
 # installed <writedir> — a COMPLETE install of the current content set: sentinel
 # carrying this build's signature + package indexes on disk (what makes a Skip safe)
 installed() { mkdir -p "$1/packages"; printf '%s\n' "$SIG" > "$1/.lobby-installed"; : > "$1/packages/x.sdp"; }
-online_on()  { : > "$RES/.online-play-disabled"; }
-online_off() { rm -f "$RES/.online-play-disabled"; }
 
-echo "== first run: notice + disclaimer shown, acks written, engine launched =="
-online_on; WD="$ROOT/w1"; run "$WD"
-{ has message-check && has consent-notice && has consent-server && has spring-launched; } \
-  && ok "message-check + notice + disclaimer + launch" || bad "first run" "$(calls)"
+echo "== first run: remote message + disclaimer shown, acks written, engine launched =="
+WD="$ROOT/w1"; run "$WD"
+{ has message-check && has consent-server && has spring-launched && ! hasre 'consent-unknown'; } \
+  && ok "message-check + disclaimer + launch (legacy marker ignored, no unexpected dialog)" || bad "first run" "$(calls)"
 [ "$(cat "$WD/.consent-ack" 2>/dev/null)" = "1" ] && ok ".consent-ack written (v1)" || bad "consent-ack"
-[ "$(cat "$WD/.notice-ack"  2>/dev/null)" = "1" ] && ok ".notice-ack written (v1)"  || bad "notice-ack"
+[ ! -e "$WD/.notice-ack" ] && ok "no .notice-ack file written" || bad "notice-ack gone"
 
 echo "== second run (same writedir): acked dialogs NOT reshown =="
 run "$WD"
-{ has message-check && ! has consent-notice && ! has consent-server && has spring-launched; } \
-  && ok "notice + disclaimer suppressed once acked; message-check still runs" || bad "second run" "$(calls)"
+{ has message-check && ! has consent-server && has spring-launched; } \
+  && ok "disclaimer suppressed once acked; message-check still runs" || bad "second run" "$(calls)"
 
 echo "== the original bug: content present but consent NOT yet acked =="
 WD2="$ROOT/w2"; mkdir -p "$WD2"; : > "$WD2/.lobby-installed"   # content 'already installed'
@@ -104,11 +107,11 @@ run "$WD2"
 has consent-server && ok "disclaimer shows despite .lobby-installed (bug fixed)" || bad "bug regression" "$(calls)"
 
 echo "== version bump re-asks once =="
-echo 0 > "$WD/.consent-ack"; echo 0 > "$WD/.notice-ack"   # simulate CONSENT/NOTICE_VERSION bump
+echo 0 > "$WD/.consent-ack"   # simulate CONSENT_VERSION bump
 run "$WD"
-{ has consent-server && has consent-notice; } && ok "stale ack -> both re-shown once" || bad "bump" "$(calls)"
+{ has consent-server; } && ok "stale ack -> disclaimer re-shown once" || bad "bump" "$(calls)"
 run "$WD"
-{ ! has consent-server && ! has consent-notice; } && ok "re-acked -> quiet again" || bad "bump re-ack" "$(calls)"
+{ ! has consent-server; } && ok "re-acked -> quiet again" || bad "bump re-ack" "$(calls)"
 
 echo "== disclaimer Quit stops launch =="
 WD3="$ROOT/w3"; run "$WD3" STUB_CONSENT_EXIT=1
@@ -119,15 +122,9 @@ WD4="$ROOT/w4"; run "$WD4" STUB_MC_EXIT=2
 { has message-check && ! has consent-server && ! has spring-launched; } \
   && ok "message-check=2 -> quit before disclaimer, no launch" || bad "killswitch" "$(calls)"
 
-echo "== online-disabled marker gates the notice =="
-online_off; WD5="$ROOT/w5"; run "$WD5"
-{ ! has consent-notice && has consent-server && has spring-launched; } \
-  && ok "no marker -> no online notice; disclaimer still shown" || bad "no-marker" "$(calls)"
-online_on
-
 echo "== BAR_ASSUME_CONSENT / BAR_SKIP_CONTENT_CHECK escapes =="
 WD6="$ROOT/w6"; run "$WD6" BAR_ASSUME_CONSENT=1
-{ ! has message-check && ! has consent-server && ! has consent-notice && has spring-launched; } \
+{ ! has message-check && ! has consent-server && ! hasre 'consent-unknown' && has spring-launched; } \
   && ok "assume-consent -> no dialogs, still launches" || bad "assume-consent" "$(calls)"
 WD7="$ROOT/w7"; run "$WD7" BAR_SKIP_CONTENT_CHECK=1
 { ! has message-check && ! has consent-server && has spring-launched; } \
