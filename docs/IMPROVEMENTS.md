@@ -147,7 +147,11 @@ found on this port because a second compiler/architecture finally looked:
 - **`math::floor` fleet parity** — x86 release builds reach `cvttss2si`
   semantics for out-of-range inputs; arm64 saturates differently. The port
   emulates the fleet's semantics in the one place it matters (PvE raptor
-  waves found it).
+  waves found it). *Base-scoped to the 2025.06.24 lineage: on the current
+  2026.07.04 base both arches resolve `math::floor` to the streflop libm
+  bit-twiddling (bit-exact per `tools/sync-test`), so the cvtt class is
+  closed without the emulation — see SYNC_VALIDATION Appendix A and the
+  `test_FloorSemantics` gate (SYNC-004).*
 - **gcc-only `-fsingle-precision-constant` in fleet builds** demotes FP
   literals inside streflop's double-precision libm; clang has no
   equivalent flag, so the shipping build swaps the affected object(s) with

@@ -2,7 +2,7 @@
   "version": "0.7.1",
   "meta": {
     "version": "1.0.0",
-    "lastUpdated": "2026-09-09T01:26:32.232Z"
+    "lastUpdated": "2026-09-09T04:23:57.964Z"
   },
   "workUnits": {
     "FOUND-001": {
@@ -205,12 +205,95 @@
       "id": "SYNC-004",
       "title": "streflop math::floor reproduces x86 cvttss2si saturation semantics on arm64",
       "type": "story",
-      "status": "backlog",
+      "status": "done",
       "createdAt": "2026-09-08T04:56:51.773Z",
-      "updatedAt": "2026-09-08T04:56:51.773Z",
-      "description": "Out-of-range float→int is UB; x86 hardware saturates (cvttss2si) and game Lua/COB relies on that value (Raptors desync). streflop math::floor now emulates the x86 cvttss2si semantics on arm64 (carried in the streflop submodule bump, commit 4a01bf411f per SYNC_VALIDATION Appendix A). Any new synced code must not reintroduce raw out-of-range float→int casts.",
+      "updatedAt": "2026-09-09T04:23:57.964Z",
+      "description": "Base-specific: cvtt/INT_MIN emulation (c20b863148) belongs to the 2025.06.24 lineage (v0.11/v0.12) only. On that base the official x86 fleet resolved math::floor to fastmath::floor (cvttss2si -> INT_MIN) while the mac streflop_cond.h exact-match overloads shadowed it with IEEE streflop::floor -> real desync, fixed by c20b863148. On the current 2026.07.04 base (main/v0.13, streflop submodule @570f86f, shared by upstream master's x86 pin too) both archs resolve math::floor to the same shared libm s_floorf/s_floor bit-twiddling (verified bit-exact across the committed NEON vs SSE references, 1985/1985 common inputs, 0 mismatches incl. NaN/inf edge rows). Porting the cvtt emulation to main would REINTRODUCE a desync vs the x86 fleet of this base. Deliverable here: regression guard unit test pinning the resolved IEEE-floor semantics against the committed cross-arch reference values (so a future cherry-pick of c20b863148 or a streflop pin change that adds arch-divergent floor behavior fails the gate), plus doc corrections (SYNC_VALIDATION Appendix A, this work unit).",
       "epic": "macos-layer",
-      "children": []
+      "children": [],
+      "stateHistory": [
+        {
+          "state": "specifying",
+          "timestamp": "2026-09-09T03:12:08.121Z"
+        },
+        {
+          "state": "testing",
+          "timestamp": "2026-09-09T03:56:01.186Z"
+        },
+        {
+          "state": "implementing",
+          "timestamp": "2026-09-09T04:17:06.652Z"
+        },
+        {
+          "state": "validating",
+          "timestamp": "2026-09-09T04:17:14.114Z"
+        },
+        {
+          "state": "done",
+          "timestamp": "2026-09-09T04:23:57.964Z"
+        }
+      ],
+      "rules": [
+        {
+          "id": 0,
+          "text": "Base-specificity: the cvtt/INT_MIN emulation (c20b863148) is a 2025.06.24-lineage fix (v0.11/v0.12, in-tree streflop). On that base the official x86 fleet resolved math::floor to fastmath::floor (int-truncate -> cvttss2si -> INT_MIN), while the mac layer's streflop_cond.h exact-match overloads shadowed it with IEEE streflop::floor (NaN) -> real desync. On the 2026.07.04 base (main/v0.13) streflop is a submodule (570f86f) whose shared IEEE floor is bit-exact across NEON/SSE, so both archs converge on IEEE floor and the cvtt class is closed WITHOUT the emulation.",
+          "deleted": false,
+          "createdAt": "2026-09-09T03:27:21.104Z"
+        },
+        {
+          "id": 1,
+          "text": "Invariant (base-scoped): on the 2026.07.04 base, math::floor(float/double) resolves via streflop_cond.h's exact-match overloads to the streflop submodule's shared libm s_floorf/s_floor bit-twiddling, which the committed cross-arch references prove bit-identical between NEON/arm64 and SSE/x86-64 (1985/1985 common inputs, 0 mismatches, including the NaN=0x7FC00000, inf=0x7F800000 and huge=0x7F7FFFFF edge rows). Any change that makes arm64 floor diverge from x86 floor (e.g. cherry-picking the 2025.06.24 cvtt emulation c20b863148 onto this base) fails this gate.",
+          "deleted": false,
+          "createdAt": "2026-09-09T03:30:25.261Z"
+        }
+      ],
+      "nextRuleId": 3,
+      "examples": [
+        {
+          "id": 0,
+          "text": "math::floor(3.7f)==3.0f and math::floor(-3.7f)==-4.0f on both archs (probe + references agree).",
+          "deleted": false,
+          "createdAt": "2026-09-09T03:30:44.238Z"
+        },
+        {
+          "id": 1,
+          "text": "math::floor(float NaN)==NaN bit 0x7FC00000 and math::floor(double NaN)==NaN (probe on arm64, NEON, engine flags; matches committed NEON reference floor(7FC00000)->7FC00000). A cvtt-style fix would make these INT_MIN (0x80000000) and fail the test.",
+          "deleted": false,
+          "createdAt": "2026-09-09T03:30:51.474Z"
+        },
+        {
+          "id": 2,
+          "text": "math::floor(+3e38f)==+3e38f (bit 0x7F61B1E6) and math::floor(-3e38f)==-3e38f on both archs — huge-magnitude inputs are already integral, floor is identity; a cvtt-style path would yield INT_MIN / INT_MAX and fail.",
+          "deleted": false,
+          "createdAt": "2026-09-09T03:30:57.057Z"
+        }
+      ],
+      "nextExampleId": 3,
+      "userStory": {
+        "role": "port maintainer",
+        "action": "verify the resolved math::floor semantics of the current 2026.07.04 base with a committed regression test",
+        "benefit": "any future change that makes arm64 floor diverge from the x86 fleet (cherry-pick of the old cvtt fix, streflop pin change) fails a gate instead of desyncing live lockstep games"
+      },
+      "estimate": 2,
+      "architectureNotes": [
+        {
+          "id": 0,
+          "text": "Test file: test/engine/System/testFloorSemantics.cpp, Catch2, same wiring as testClampRad (test_Common_sources + streflop lib, -DNOT_USING_CREG -DBUILDING_AI). It includes lib/streflop/streflop_cond.h then System/FastMath.h (the exact include order of lmathlib.cpp, the synced Lua math.floor callin) and pins math::floor's resolved output bits for bounded/NaN/inf/out-of-range float+double inputs against the committed tools/sync-test cross-arch references (NEON vs SSE, floor 1985/1985 common inputs, 0 mismatches). No engine globals; pure function evaluation.",
+          "deleted": false,
+          "createdAt": "2026-09-09T03:46:51.663Z"
+        },
+        {
+          "id": 1,
+          "text": "Evidence trail (probe /tmp/floor_probe, engine flags, STREFLOP_NEON, -ffp-contract=off): on main (2026.07.04 base) math::floor(NaN)=0x7FC00000, math::floor(±3e38)=±0x7F61B1E6, math::floor(2.25f)=0x40000000, math::floor(-0.25f)=0xBF800000; double: floor(NaN)=0x7FF8000000000000, floor(±inf)=±0x7FF0000000000000. fastmath::floor(NaN)=0 on arm64 (fcvtzs) vs INT_MIN on x86 (cvttss2si) — the one remaining arch-divergent path, but it is only reachable via direct fastmath::floor calls; no synced call site uses it (grep: only the using-declaration in FastMath.h). The cvtt fix c20b863148 is NOT on main/v0.13 and must not be cherry-picked forward (would make arm64 diverge from this base's x86 fleet).",
+          "deleted": false,
+          "createdAt": "2026-09-09T03:46:58.754Z"
+        }
+      ],
+      "nextNoteId": 2,
+      "attachments": [
+        "spec/attachments/SYNC-004/ast-research-math-floor-callers.md"
+      ],
+      "iterations": 1
     },
     "PLAT-001": {
       "id": "PLAT-001",
@@ -396,7 +479,6 @@
       "GFX-001",
       "GFX-002",
       "GFX-003",
-      "SYNC-004",
       "PLAT-001",
       "PLAT-002",
       "PLAT-004",
@@ -412,7 +494,8 @@
     "done": [
       "FOUND-001",
       "PLAT-003",
-      "SYNC-003"
+      "SYNC-003",
+      "SYNC-004"
     ],
     "blocked": []
   },

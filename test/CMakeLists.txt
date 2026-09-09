@@ -536,6 +536,20 @@ endif()
 	add_spring_test(${test_name} "${test_src}" "${test_libs}" "${test_flags}")
 
 ################################################################################
+### FloorSemantics (SYNC-004: pin resolved math::floor IEEE/cvtt-parity bits)
+	set(test_name FloorSemantics)
+	set(test_src
+			"${CMAKE_CURRENT_SOURCE_DIR}/engine/System/testFloorSemantics.cpp"
+			${test_Common_sources}
+		)
+	set(test_libs
+			streflop
+			${WINMM_LIBRARY}
+		)
+	set(test_flags "-DNOT_USING_CREG -DBUILDING_AI")
+	add_spring_test(${test_name} "${test_src}" "${test_libs}" "${test_flags}")
+
+################################################################################
 ### EventClient
 	set(test_name EventClient)
 	set(test_src

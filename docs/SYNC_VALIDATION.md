@@ -137,11 +137,19 @@ in §3 and flagged as an upstream candidate.
 
 | Change | Files | Why it is sync-safe |
 |---|---|---|
-| glibc dbl-64 libm import (fleet parity for `double` math) | `rts/lib/streflop/libm/dbl-64/` | Compiles the exact glibc implementations the fleet's gcc builds call, instead of Apple libm. Proven by the cross-arch streflop test (§1: 52,080/52,080 bit-exact) and the dfp libm-hash gate in every build. |
-| `math::floor` x86 `cvttss2si` semantics emulation | `rts/lib/streflop/streflop_cond.h` | Out-of-range float→int conversion is UB; x86 hardware saturates to 0x80000000 and game Lua/COB relies on it (raptors desync). arm64 now computes the same value the fleet computes. |
+| glibc dbl-64 libm import (fleet parity for `double` math) | `rts/lib/streflop/libm/dbl-64/` (in-tree streflop, 2025.06.24 lineage) | Compiles the exact glibc implementations the fleet's gcc builds call, instead of Apple libm. Proven by the cross-arch streflop test (§1: 52,080/52,080 bit-exact) and the dfp libm-hash gate in every build. |
+| `math::floor` x86 `cvttss2si` semantics emulation | `rts/lib/streflop/streflop_cond.h` (in-tree streflop, 2025.06.24 lineage) | Out-of-range float→int conversion is UB; x86 hardware saturates to 0x80000000 and game Lua/COB relies on it (raptors desync). arm64 now computes the same value the fleet computes. |
 | COB callin float→short truncation | `rts/Sim/Units/Scripts/CobInstance.cpp`, `CobThread.cpp` | float→short out-of-range conversion is UB; clang-arm64 and gcc-x86 disagreed. Replaced with defined int32 truncation matching the fleet's observed behavior. |
 | float→short/heading UB sweep | `rts/Sim/Path/IPathController.cpp`, `rts/Sim/MoveTypes/{Ground,HoverAir}MoveType.cpp`, `rts/Lua/LuaSynced{MoveCtrl,Read}.cpp` | Same UB class as above, found by audit rather than by desync. Same defined-truncation replacement. |
-| streflop submodule bump (fleet-parity `math::floor`) | `rts/lib/streflop` | Carries the upstream fix for the same divergence class. |
+| streflop as submodule (2026.07.04 base) | `rts/lib/streflop` @ `570f86f` (RecoilEngine/streflop, also the pin of upstream master's x86 builds) | On this base `math::floor` resolves on **both** arches to the streflop libm `s_floorf`/`s_floor` bit-twiddling, which the committed `tools/sync-test` references prove bit-identical NEON/arm64 vs SSE/x86-64 (1985/1985 common inputs, 0 mismatches, NaN/inf/huge edge rows included). The cvtt class is therefore closed **without** the emulation, and the 2025.06.24-lineage cvtt fix (`c20b863148`) must **not** be ported forward: this base's x86 fleet computes IEEE `floor(NaN)=NaN`, so the emulation would make arm64 diverge. Pinned by the `test_FloorSemantics` regression gate (SYNC-004). |
+
+**Base scope.** The register above mixes two bases. Rows 1–2 are the
+2025.06.24-lineage port (in-tree streflop, v0.11/v0.12); the port re-landed
+onto the 2026.07.04 upstream base (main / v0.13), where streflop is a
+submodule and the cvtt / dbl-64 divergence class is closed by the shared
+streflop libm itself (row 5) instead of by port-authored floor code. Rows
+3–4 (the `rts/Sim/` int32 truncation sweep) are upstream now
+(`7104ab1f76` / `8a041014a2`) and apply on both bases.
 
 Everything else the port changes is unsynced (rendering, present, input,
 audio, packaging) or build-system-level with sync gates re-run after every

@@ -1,0 +1,212 @@
+{
+  "scenarios": [
+    {
+      "name": "Bounded float inputs floor identically on both arches",
+      "testMappings": [
+        {
+          "file": "test/engine/System/testFloorSemantics.cpp",
+          "lines": "70-86",
+          "implMappings": [
+            {
+              "file": "rts/lib/streflop/libm/flt-32/s_floorf.cpp",
+              "lines": [
+                41,
+                42,
+                43,
+                44,
+                45,
+                46,
+                47,
+                48,
+                49,
+                50,
+                51,
+                52,
+                53,
+                54,
+                55,
+                56,
+                57,
+                58,
+                59,
+                60,
+                61,
+                62,
+                63,
+                64,
+                65,
+                66,
+                67,
+                68,
+                69,
+                70,
+                71,
+                72
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "NaN and infinite inputs stay IEEE on both arches (the cvtt regression tripwire)",
+      "testMappings": [
+        {
+          "file": "test/engine/System/testFloorSemantics.cpp",
+          "lines": "93-119",
+          "implMappings": [
+            {
+              "file": "rts/lib/streflop/libm/dbl-64/s_floor.cpp",
+              "lines": [
+                38,
+                39,
+                40,
+                41,
+                42,
+                43,
+                44,
+                45,
+                46,
+                47,
+                48,
+                49,
+                50,
+                51,
+                52,
+                53,
+                54,
+                55,
+                56,
+                57,
+                58,
+                59,
+                60,
+                61,
+                62,
+                63,
+                64,
+                65,
+                66,
+                67,
+                68,
+                69,
+                70,
+                71,
+                72,
+                73,
+                74,
+                75,
+                76,
+                77,
+                78,
+                79,
+                80,
+                81,
+                82,
+                83
+              ]
+            },
+            {
+              "file": "rts/lib/streflop/libm/flt-32/s_floorf.cpp",
+              "lines": [
+                41,
+                42,
+                43,
+                44,
+                45,
+                46,
+                47,
+                48,
+                49,
+                50,
+                51,
+                52,
+                53,
+                54,
+                55,
+                56,
+                57,
+                58,
+                59,
+                60,
+                61,
+                62,
+                63,
+                64,
+                65,
+                66,
+                67,
+                68,
+                69,
+                70,
+                71,
+                72
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Out-of-int32-range magnitudes floor to themselves on both arches",
+      "testMappings": [
+        {
+          "file": "test/engine/System/testFloorSemantics.cpp",
+          "lines": "126-144",
+          "implMappings": [
+            {
+              "file": "rts/lib/streflop/libm/flt-32/s_floorf.cpp",
+              "lines": [
+                41,
+                42,
+                43,
+                44,
+                45,
+                46,
+                47,
+                48,
+                49,
+                50,
+                51,
+                52,
+                53,
+                54,
+                55,
+                56,
+                57,
+                58,
+                59,
+                60,
+                61,
+                62,
+                63,
+                64,
+                65,
+                66,
+                67,
+                68,
+                69,
+                70,
+                71,
+                72
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "stats": {
+    "totalScenarios": 3,
+    "coveredScenarios": 3,
+    "coveragePercent": 100,
+    "testFiles": [
+      "test/engine/System/testFloorSemantics.cpp"
+    ],
+    "implFiles": [
+      "rts/lib/streflop/libm/flt-32/s_floorf.cpp",
+      "rts/lib/streflop/libm/dbl-64/s_floor.cpp"
+    ],
+    "totalLinesCovered": 205
+  }
+}

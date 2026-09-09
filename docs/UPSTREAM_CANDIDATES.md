@@ -63,8 +63,18 @@ fleet compilers disagree. Defined int32 truncation, gcc-x86-identical.
 Full register: engine SYNC_VALIDATION.md Appendix A.
 
 ### 7. Recoil engine PR: streflop math::floor — x86 cvttss2si semantics on arm64
-`engine-2025.06.24@4a01bf411f`. Out-of-range float→int is UB; x86 saturates
-to 0x80000000 and game code observes it (raptors desync). Emulate on arm64.
+`engine-2025.06.24@4a01bf411f` (cherry-picked here as `c20b863148`).
+Out-of-range float→int is UB; x86 saturates to 0x80000000 and game code
+observes it (raptors desync). Emulate on arm64.
+**Base-scoped to the 2025.06.24 lineage (v0.11/v0.12, in-tree streflop).**
+On the 2026.07.04 base (main/v0.13) streflop is a submodule
+(`RecoilEngine/streflop @ 570f86f`, also upstream master's x86 pin) whose
+`math::floor` resolves on both arches to the shared libm `s_floorf`/
+`s_floor` bit-twiddling — bit-identical NEON vs SSE per the committed
+`tools/sync-test` references. The cvtt class is closed without the
+emulation on this base, and cherry-picking this PR forward would make
+arm64 diverge from this base's x86 fleet. Pinned by
+`test_FloorSemantics` (SYNC-004); see SYNC_VALIDATION Appendix A.
 
 ### 8. Recoil engine PR: SDL_AUDIODEVICEADDED passes a device index, not an instance id
 `fd63d525d8` subset. The handler compared an index against instance ids and
