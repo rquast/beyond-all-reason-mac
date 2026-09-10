@@ -52,3 +52,6 @@
 [submodule "rts/lib/streflop"]
 	path = rts/lib/streflop
 	url = https://github.com/RecoilEngine/streflop.git
+[submodule "chobby"]
+	path = chobby
+	url = https://github.com/beyond-all-reason/BYAR-Chobby.git

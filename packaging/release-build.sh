@@ -427,6 +427,27 @@ for b in "$MACOS/spring" "$MACOS/spring-headless" "$MACOS/pr-downloader"; do
 done
 for d in "$FRAMEWORKS"/*.dylib; do bundle_deps "$d"; done
 
+# Runtime dlopen dependencies are INVISIBLE to otool -L (which bundle_deps
+# follows), so they are not in the static closure and must be copied by hand.
+# Known case: the bundled libSDL2-2.0.0.dylib is Homebrew's sdl2-compat shim
+# (compat version 3201.x), which dlopen()s libSDL3.dylib at startup, probing
+# "@executable_path/libSDL3.dylib" then "@loader_path/libSDL3.dylib" (then a
+# bare name). On a machine without a system libSDL3 the probes miss and the
+# engine aborts: "Failed loading SDL3 library." (GUI error dialog). We bundle
+# libSDL3.0.dylib AS libSDL3.dylib so the @loader_path probe resolves inside
+# the bundle. libSDL3.0.dylib's only non-system dep is itself (its LC_ID), so
+# this single file is the whole closure. If a future engine links a real SDL2
+# (compat 12.x, no dlopen) this block is inert: the name check matches nothing.
+SHIM=$FRAMEWORKS/libSDL2-2.0.0.dylib
+if [ -f "$SHIM" ] && strings "$SHIM" 2>/dev/null | grep -q "libSDL3.dylib"; then
+  SDL3_SRC=$(brew --prefix sdl3 2>/dev/null)/lib/libSDL3.dylib
+  [ -f "$SDL3_SRC" ] || { echo "FATAL: sdl2-compat shim bundled but $(brew --prefix sdl3 2>/dev/null || echo sdl3)/lib/libSDL3.dylib not found (brew install sdl3)"; exit 1; }
+  cp "$SDL3_SRC" "$FRAMEWORKS/libSDL3.dylib"
+  chmod u+w "$FRAMEWORKS/libSDL3.dylib"
+  install_name_tool -id "@rpath/libSDL3.dylib" "$FRAMEWORKS/libSDL3.dylib"
+  echo "sdl2-compat detected: bundled libSDL3.dylib (runtime dlopen closure)"
+fi
+
 # Build machines leak LC_RPATHs into binaries (brew lib dirs, build trees).
 # Inside the bundle those must not exist: a foreign rpath makes dyld resolve
 # @rpath deps OUTSIDE the bundle (works on the build box, breaks or loads the
@@ -617,7 +638,11 @@ mkdir -p "$RESOURCES/LICENSES"
 cp "$SRC/COPYING" "$RESOURCES/"
 cp "$PKG/NOTICE" "$RESOURCES/"
 cp "$PKG/LICENSES/MANIFEST.tsv" "$RESOURCES/LICENSES/"
-"$PKG/collect-licenses.sh" "$RESOURCES/LICENSES" || { echo "FATAL: license collection failed"; exit 1; }
+# ENGINE_SRC must follow the build we are packaging (LESSON-59 class: the
+# script's own default pins engine-2025.06.24, which stopped shipping when the
+# 2026.07.04 lane consolidated into the repo root — same defect this file's
+# header calls out). collect-licenses.sh reads $SRC/COPYING + $SRC/rts/lib/*.
+ENGINE_SRC="$SRC" "$PKG/collect-licenses.sh" "$RESOURCES/LICENSES" || { echo "FATAL: license collection failed"; exit 1; }
 cp "$RESOURCES/LICENSES/"*.txt "$PKG/LICENSES/" 2>/dev/null || true
 "$PKG/license-audit.sh" "$APP"
 

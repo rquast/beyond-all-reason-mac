@@ -92,6 +92,22 @@ if [ -f "$BUILD/CMakeCache.txt" ]; then
   fi
 fi
 
+# CI: the engine's version gate (fetch_spring_version, rts/build/cmake/
+# UtilVersion.cmake:197) FATALs on a git-describe that contains no release tag.
+# This fork's release tags are vN.N (port tags) — the upstream date tags
+# (2026.07.04) do not exist in this repo — so git describe falls back to a bare
+# short SHA, which fails VERSION_REGEX_ANY. CI=1 takes the upstream-sanctioned
+# escape for tag-less clones (skip the regex gate); ConfigureVersion.cmake then
+# applies the PINNED_VERSION override that gives the fleet version identity.
+#
+# The check runs at BUILD time: "Configuring Version files" is a custom ninja
+# command, so the env var must be in the environment of the ninja process too,
+# not just the configure process. Export it for this script's whole lifetime.
+# Scope: cmake/ninja only. The only other tree consumer is the tests/
+# CMakeLists CI guard, which only EXCLUDES the UDPListener test from
+# 'install-tests' (upstream travis workaround) — we never run that target, and
+# 'make test' runs the packaging/* suite, not ctest.
+export CI=1
 cmake --fresh -S "$SRC" -B "$BUILD" -G Ninja \
   -DCMAKE_BUILD_TYPE=RELWITHDEBINFO \
   -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
