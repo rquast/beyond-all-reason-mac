@@ -85,9 +85,10 @@ export GALLIUM_DRIVER=zink
 export MESA_LOADER_DRIVER_OVERRIDE=zink
 export MESA_GL_VERSION_OVERRIDE=4.6
 # NB do NOT rely on DYLD_* here: the hardened runtime strips them. Zink finds
-# the bundled Vulkan loader via @rpath (patches/mesa/0004) and the engine
-# links bundled dylibs via LC_RPATH — the env below is only a courtesy for
-# ad-hoc/dev bundles that run without library validation.
+# the bundled Vulkan loader via @rpath (upstream c26d3301b26 + the driver's
+# baked -Wl,-rpath / the engine's LC_RPATH) and the engine links bundled
+# dylibs via LC_RPATH — the env below is only a courtesy for ad-hoc/dev
+# bundles that run without library validation.
 export DYLD_FALLBACK_LIBRARY_PATH="$FRAMEWORKS"
 export PRD_RAPID_REPO_MASTER="https://repos-cdn.beyondallreason.dev/repos.gz"
 export PRD_HTTP_SEARCH_URL="https://files-cdn.beyondallreason.dev/find"

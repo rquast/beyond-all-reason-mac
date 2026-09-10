@@ -1,0 +1,24 @@
+From 82a914f656973c6ec845ced080df29b4c81a713b Mon Sep 17 00:00:00 2001
+From: BAR rebase <bar@local>
+Date: Thu, 10 Sep 2026 20:02:19 +1000
+Subject: [PATCH 9/9] zink: enable renderpass tracking for KosmicKrisp
+
+---
+ src/gallium/drivers/zink/zink_screen.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/gallium/drivers/zink/zink_screen.c b/src/gallium/drivers/zink/zink_screen.c
+index c11c6a2cabe..fafd47654c0 100644
+--- a/src/gallium/drivers/zink/zink_screen.c
++++ b/src/gallium/drivers/zink/zink_screen.c
+@@ -3097,6 +3097,7 @@ init_driver_workarounds(struct zink_screen *screen)
+    case VK_DRIVER_ID_BROADCOM_PROPRIETARY:
+    case VK_DRIVER_ID_ARM_PROPRIETARY:
+    case VK_DRIVER_ID_MESA_HONEYKRISP:
++   case VK_DRIVER_ID_MESA_KOSMICKRISP:
+       screen->driver_workarounds.track_renderpasses = true; //screen->info.primgen_feats.primitivesGeneratedQueryWithRasterizerDiscard
+       break;
+    default:
+-- 
+2.50.1 (Apple Git-155)
+

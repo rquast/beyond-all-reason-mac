@@ -1,21 +1,8 @@
-From 1823e03df44ef8cc319fab7805eb0b82e3555626 Mon Sep 17 00:00:00 2001
-From: benbreen <8338320+benbreen@users.noreply.github.com>
-Date: Mon, 20 Jul 2026 21:40:42 +0100
-Subject: [PATCH 08/11] kosmickrisp: support fillModeNonSolid via Metal
- triangle fill mode
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-
-VK_POLYGON_MODE_LINE was silently ignored: the feature bit was never
-advertised, so zink forced VK_POLYGON_MODE_FILL and GL wireframe
-(glPolygonMode GL_LINE) rendered as solid fills — e.g. BAR's drag-select
-rectangle drew as an opaque box. Metal supports wireframe natively via
-MTLTriangleFillModeLines, so advertise fillModeNonSolid and set the
-encoder fill mode from the dynamic rasterization state.
-
-VK_POLYGON_MODE_POINT stays unsupported (no Metal equivalent); zink
-never emits it while maint5 polygonModePointSize is false.
+From 318320da83e95c10ae8b0b03176573b6466ea0ac Mon Sep 17 00:00:00 2001
+From: BAR rebase <bar@local>
+Date: Thu, 10 Sep 2026 20:02:19 +1000
+Subject: [PATCH 3/9] kosmickrisp: support fillModeNonSolid via Metal triangle
+ fill mode
 
 ---
  src/kosmickrisp/bridge/mtl_encoder.h        |  3 +++
@@ -27,10 +14,10 @@ never emits it while maint5 polygonModePointSize is false.
  6 files changed, 35 insertions(+)
 
 diff --git a/src/kosmickrisp/bridge/mtl_encoder.h b/src/kosmickrisp/bridge/mtl_encoder.h
-index beed5d5f..c23cd915 100644
+index 91ef3af0e18..75ecaa1cd75 100644
 --- a/src/kosmickrisp/bridge/mtl_encoder.h
 +++ b/src/kosmickrisp/bridge/mtl_encoder.h
-@@ -92,6 +92,9 @@ void mtl_set_front_face_winding(mtl_render_encoder *encoder,
+@@ -88,6 +88,9 @@ void mtl_set_front_face_winding(mtl_render_encoder *encoder,
  
  void mtl_set_cull_mode(mtl_render_encoder *encoder, enum mtl_cull_mode mode);
  
@@ -41,10 +28,10 @@ index beed5d5f..c23cd915 100644
                                      enum mtl_visibility_result_mode mode,
                                      size_t offset);
 diff --git a/src/kosmickrisp/bridge/mtl_encoder.m b/src/kosmickrisp/bridge/mtl_encoder.m
-index dd5037ba..7d41bf40 100644
+index 433cced8427..ca60d337d35 100644
 --- a/src/kosmickrisp/bridge/mtl_encoder.m
 +++ b/src/kosmickrisp/bridge/mtl_encoder.m
-@@ -351,6 +351,16 @@
+@@ -315,6 +315,16 @@
     }
  }
  
@@ -62,10 +49,10 @@ index dd5037ba..7d41bf40 100644
  mtl_set_visibility_result_mode(mtl_render_encoder *encoder,
                                 enum mtl_visibility_result_mode mode,
 diff --git a/src/kosmickrisp/bridge/mtl_types.h b/src/kosmickrisp/bridge/mtl_types.h
-index b3dbfea9..9bc1a7e0 100644
+index 76256c2f86a..b61090b43be 100644
 --- a/src/kosmickrisp/bridge/mtl_types.h
 +++ b/src/kosmickrisp/bridge/mtl_types.h
-@@ -210,6 +210,11 @@ enum mtl_cull_mode {
+@@ -218,6 +218,11 @@ enum mtl_cull_mode {
     MTL_CULL_MODE_BACK = 2,
  };
  
@@ -78,10 +65,10 @@ index b3dbfea9..9bc1a7e0 100644
     MTL_VISIBILITY_RESULT_MODE_DISABLED = 0,
     MTL_VISIBILITY_RESULT_MODE_BOOLEAN = 1,
 diff --git a/src/kosmickrisp/bridge/stubs/mtl_encoder.c b/src/kosmickrisp/bridge/stubs/mtl_encoder.c
-index 931733eb..fb8dc40d 100644
+index b1482b50b4d..85011448c89 100644
 --- a/src/kosmickrisp/bridge/stubs/mtl_encoder.c
 +++ b/src/kosmickrisp/bridge/stubs/mtl_encoder.c
-@@ -173,6 +173,12 @@ mtl_set_cull_mode(mtl_render_encoder *encoder, enum mtl_cull_mode mode)
+@@ -153,6 +153,12 @@ mtl_set_cull_mode(mtl_render_encoder *encoder, enum mtl_cull_mode mode)
  {
  }
  
@@ -95,10 +82,10 @@ index 931733eb..fb8dc40d 100644
  mtl_set_visibility_result_mode(mtl_render_encoder *encoder,
                                 enum mtl_visibility_result_mode mode,
 diff --git a/src/kosmickrisp/vulkan/kk_cmd_draw.c b/src/kosmickrisp/vulkan/kk_cmd_draw.c
-index deb51cf2..0b65a695 100644
+index 14072e3a1b4..44af611341e 100644
 --- a/src/kosmickrisp/vulkan/kk_cmd_draw.c
 +++ b/src/kosmickrisp/vulkan/kk_cmd_draw.c
-@@ -1223,6 +1223,16 @@ kk_flush_dynamic_state(struct kk_cmd_buffer *cmd)
+@@ -1228,6 +1228,16 @@ kk_flush_dynamic_state(struct kk_cmd_buffer *cmd)
        }
     }
  
@@ -116,10 +103,10 @@ index deb51cf2..0b65a695 100644
     if (!(dyn->rs.rasterizer_discard_enable || gfx->is_cull_front_and_back) &&
         (IS_DIRTY(VP_VIEWPORT_COUNT) || IS_DIRTY(VP_VIEWPORTS) ||
 diff --git a/src/kosmickrisp/vulkan/kk_physical_device.c b/src/kosmickrisp/vulkan/kk_physical_device.c
-index 5b981faa..f5c1a3ce 100644
+index 227273d1326..66c44701b1b 100644
 --- a/src/kosmickrisp/vulkan/kk_physical_device.c
 +++ b/src/kosmickrisp/vulkan/kk_physical_device.c
-@@ -209,6 +209,7 @@ kk_get_device_features(
+@@ -211,6 +211,7 @@ kk_get_device_features(
        .depthClamp = true,
        .drawIndirectFirstInstance = true,
        .dualSrcBlend = true,
@@ -127,3 +114,6 @@ index 5b981faa..f5c1a3ce 100644
        .fragmentStoresAndAtomics = true,
        .fullDrawIndexUint32 = true,
        .imageCubeArray = true,
+-- 
+2.50.1 (Apple Git-155)
+

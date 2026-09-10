@@ -23,7 +23,7 @@ set -euo pipefail
 
 BAR="${BAR:-$(cd "$(dirname "$0")/.." && pwd)}"
 DEPS="$BAR/deps"
-MESA_COMMIT="8f272b1fe18e95366386a075f2df0db4e9ea78b9"   # full SHA, pinned (verified to render BAR on KosmicKrisp)
+MESA_COMMIT="3281a69a8bfd9f997e91c15ed0e6290cae12dd32"   # full SHA of tag mesa-26.2.2 (stable 26.2.2 point release, 2026-09-02; verified to render BAR on KosmicKrisp)
 SPIRV_XLAT_TAG="v19.1.7"
 MESA_PREFIX="${MESA_PREFIX:-$DEPS/mesa-native}"           # driver install prefix
 MESA_SRC="${MESA_SRC:-$DEPS/mesa-src}"
@@ -98,7 +98,7 @@ fi
 test -f "$DEPS/spirv-xlat-install/lib/pkgconfig/LLVMSPIRVLib.pc" || { echo "FATAL: spirv-xlat install missing"; exit 1; }
 echo "spirv-xlat OK"
 
-echo "=== [3/4] Mesa 26.2-devel (zink + kosmickrisp) @ $MESA_COMMIT + $NPATCH patches ==="
+echo "=== [3/4] Mesa 26.2.2 (zink + kosmickrisp) @ $MESA_COMMIT + $NPATCH patches ==="
 if [ ! -d "$MESA_SRC/.git" ]; then
   git clone https://gitlab.freedesktop.org/mesa/mesa.git "$MESA_SRC"
 fi
@@ -164,6 +164,13 @@ export LIBRARY_PATH="/opt/homebrew/lib"
 NEUTRAL_PREFIX="/opt/bar-driver"
 STAGE="$DEPS/mesa-stage"
 
+# mesa 26.2 (c26d3301b26) switched zink's dlopen of the Vulkan loader to
+# "@rpath/libvulkan.1.dylib" and bakes this rpath into the zink driver dylib
+# via -Wl,-rpath. The Khronos loader we bundle (brew vulkan-loader) lives at
+# /opt/homebrew/lib on dev machines; the release bundle re-resolves it to
+# @rpath (packaging/release-build.sh) via the engine's LC_RPATH. Point the
+# built-in rpath at the dev location so a bare (non-bundle) launch still
+# finds the loader on this machine.
 rm -rf build-native "$STAGE"
 meson setup build-native --native-file "$DEPS/plain-native.ini" \
   --pkg-config-path "$DEPS/spirv-xlat-install/lib/pkgconfig" \
@@ -171,6 +178,7 @@ meson setup build-native --native-file "$DEPS/plain-native.ini" \
   -Degl-native-platform=surfaceless -Degl=enabled -Dglx=disabled \
   -Dgallium-drivers=zink -Dvulkan-drivers=kosmickrisp \
   -Dmoltenvk-dir=/opt/homebrew/opt/molten-vk \
+  -Dvulkan-loader-rpath=/opt/homebrew/lib \
   -Dllvm=enabled -Dshared-llvm=disabled -Dbuildtype=release
 DESTDIR="$STAGE" ninja -C build-native install
 
@@ -222,8 +230,24 @@ ls "$MESA_PREFIX/share/vulkan/icd.d/" 2>/dev/null || true
 # silently misses debug-map/symbol-table paths.
 leaks=0
 for d in "$MESA_PREFIX"/lib/*.dylib; do
-  hits="$(LC_ALL=C grep -a -o '/Users/[^ "]\{0,120\}' "$d" 2>/dev/null | sort -u || true)"
-  [ -z "$hits" ] || { n=$(echo "$hits" | wc -l | tr -d ' '); echo "FATAL: $(basename "$d") embeds $n /Users/ path(s):"; echo "$hits" | head -5 | sed 's/^/    /'; leaks=$((leaks+n)); }
+   # Exclude the DELIBERATE dev install-names + inter-lib deps the step above
+   # just set to "$MESA_PREFIX/lib/<name>.dylib": those are absolute by design
+   # (nothing outside a bundle can load the driver otherwise) and are rewritten
+   # to @rpath at ship time by packaging/release-build.sh, whose own builder-path
+   # audit is the shipping gate. A real leak (compiled-in source path under
+   # deps/mesa-src/, the build dir, or a builder home) is NOT under
+   # $MESA_PREFIX/lib/ and stays flagged. LESSON-41 stands: grep the bytes,
+   # never infer from flags.
+   #
+   # LC_ALL=C across the WHOLE pipeline: the matches are raw dylib bytes (NULs,
+   # Mach-O length prefixes); a UTF-8 locale makes `sort` die with "Illegal
+   # byte sequence" and SILENTLY DROP the hits — the pre-fix scan only ever
+   # flagged a dylib when its surrounding bytes happened to survive sort.
+   hits="$(LC_ALL=C grep -a -o '/Users/[^ "]\{0,120\}' "$d" 2>/dev/null \
+           | tr -d '\0' \
+           | grep -v "^$MESA_PREFIX/lib/" \
+           | LC_ALL=C sort -u || true)"
+   [ -z "$hits" ] || { n=$(echo "$hits" | wc -l | tr -d ' '); echo "FATAL: $(basename "$d") embeds $n /Users/ path(s):"; echo "$hits" | head -5 | sed 's/^/    /'; leaks=$((leaks+n)); }
 done
 [ "$leaks" -eq 0 ] || { echo "FATAL: driver embeds $leaks builder-path string(s) — see LESSON-41"; exit 1; }
 echo "driver path-leak scan: 0 /Users/ strings across $(ls "$MESA_PREFIX"/lib/*.dylib | wc -l | tr -d ' ') dylibs"

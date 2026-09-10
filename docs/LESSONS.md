@@ -231,3 +231,39 @@ Every painful or non-obvious finding becomes a numbered entry. Never renumber.
   driver-queue QoS flat; renderpass fragmentation self-resolved (r1 wins
   collapsed submits 10.3→0.5/frame — re-derive per-frame rates from CURRENT
   timestamps before sizing a lead from old counters).
+- **LESSON-52 — a raw-byte hygiene grep must keep the ENTIRE pipeline in
+  LC_ALL=C, or it silently stops catching real leaks.** The driver
+  build's LESSON-41 scan (`grep -a -o '/Users/…' dylib | sort -u`) was
+  locale-fragile: the matches are raw Mach-O bytes (NULs, length prefixes),
+  and a UTF-8 locale makes `sort` die with "Illegal byte sequence" and drop
+  the hits — so the scan only ever flagged a dylib when its surrounding
+  bytes happened to survive sort (that's why the 26.2.0 build that
+  produced the unstamped `deps/mesa-native` of 2026-09-09 never stamped).
+  Second half of the same lesson: the scan must EXEMPT the dev
+  install-names the script itself just wrote
+  (`$MESA_PREFIX/lib/<name>.dylib`, absolute by design, rewritten to
+  @rpath at ship time by packaging/release-build.sh whose builder-path
+  audit is the real shipping gate) — otherwise the script's own deliberate
+  `install_name_tool -id` step guarantees a FATAL on every build. Exempt
+  ONLY the `^$MESA_PREFIX/lib/` prefix; a compiled-in source path under
+  deps/mesa-src/, a build dir, or a builder home is never under it and
+  still fails the build.
+- **LESSON-53 — when re-basing a driver patch series onto a Mesa stable
+  point release, verify each kept patch's MECHANISM still exists, not just
+  that the file still exists.** On the 26.2.2 bump (2026-09-10): the
+  Metal4 rework (`Move to Metal4 command encoding`, `Record command buffers
+  live and replay only on resubmit`) deleted the per-queue pre_gfx command
+  queue (old patch 0005's target — hazard now unrepresentable), turned
+  `kk_cmd_write` from a deferred `encoder->imm_writes` list into an IMMEDIATE
+  pre_gfx `libkk_write_u32` dispatch + `DISPATCH→DISPATCH` barrier (old
+  patch 0003's second hunk — its ordering workaround is now upstream),
+  and nulls `uploader.bo/offset` in the reset path (old 0004 redundant).
+  The old 0003 hunk that called `mtl_memory_barrier_with_scope` /
+  `kk_encoder_pre_gfx_encoder` (both removed in 26.2.2) failed to even
+  APPLY-compile — a `git apply --check` dry run on a clean target catches the
+  context-drift patches, but only compiling catches removed APIs. Two
+  patches became upstream-provided (zink @rpath loader dlopen c26d3301b26,
+  KK all-shaders-fast-math bdc3a6afe1a) — the series shrank 13→9.
+  Determinism-neutral throughout (render path only), but the new driver
+  needs the full certify ladder before it ships (visreg baselines may move;
+  see MAINTENANCE.md).

@@ -1,0 +1,47 @@
+From: BAR macOS port (rebased)
+Subject: kosmickrisp: reset the geometry heap exactly once per command buffer
+
+Re-based onto Mesa 26.2.2 (tag commit 3281a69a8bfd9f997e91c15ed0e6290cae12dd32).
+In 26.2.2 the Metal4 rework changed kk_cmd_write from a deferred
+encoder->imm_writes list to an IMMEDIATE libkk_write_u32 dispatch into the
+pre_gfx encoder when not mid-render, and every libkk dispatch is now followed
+by mtl_barrier_after_encoder_stages(DISPATCH, DISPATCH) (kk_cmd_meta.c).
+That is exactly the ordering the original patch's second hunk (hand-encode the
+heap reset as the first pre_gfx dispatch with a barrier, instead of deferring
+through the imm-write list) was working around, so that hunk is superseded by
+upstream and only the first hunk (do not clear cmd->uses_heap in
+kk_cmd_buffer_dirty_all_gfx, which runs on mid-cmdbuf renderpass restarts)
+survives. Original rationale (pre-Metal4): clearing the flag made kk_heap()
+encode a SECOND heap reset (bottom=0) into the same command buffer; since all
+geometry-unroll compute runs in the pre-gfx encoder before any render pass
+executes, the second unroll then reallocated from offset 0 and OVERWROTE the
+first draw's unrolled indices before they were consumed — rendering garbage
+geometry (giant-triangle artifact). The heap must be reset exactly once per
+command buffer execution; uses_heap is cleared in
+kk_reset_cmd_buffer_internal() when the command buffer is recycled.
+
+diff --git a/src/kosmickrisp/vulkan/kk_cmd_buffer.h b/src/kosmickrisp/vulkan/kk_cmd_buffer.h
+index 19928d1aa18..af03bfd200c 100644
+--- a/src/kosmickrisp/vulkan/kk_cmd_buffer.h
++++ b/src/kosmickrisp/vulkan/kk_cmd_buffer.h
+@@ -303,10 +303,16 @@ kk_cmd_buffer_dirty_all_gfx(struct kk_cmd_buffer *cmd)
+    cmd->state.gfx.dirty = ~0u;
+    cmd->state.gfx.descriptors.root_dirty = true;
+ 
+-   /* We just flushed out the heap use. If we want to use it again, we'll need
+-    * to queue a free for it again.
+-    */
+-   cmd->uses_heap = false;
++   /* NOTE: do NOT clear cmd->uses_heap here. This function runs on mid-command-
++    * buffer render pass restarts (e.g. around meta blits such as font-atlas
++    * uploads). Clearing the flag made kk_heap() encode a SECOND heap reset
++    * (bottom=0) into the same command buffer; since all geometry-unroll compute
++    * runs in the pre-gfx encoder before any render pass executes, the second
++    * unroll then reallocated from offset 0 and OVERWROTE the first draw's
++    * unrolled indices before they were consumed — rendering garbage geometry
++    * (giant-triangle artifact). The heap must be reset exactly once per
++    * command buffer execution; uses_heap is cleared in
++    * kk_reset_cmd_buffer_internal() when the command buffer is recycled. */
+ }
+ 
+ void kk_cmd_release_dynamic_ds_state(struct kk_cmd_buffer *cmd);

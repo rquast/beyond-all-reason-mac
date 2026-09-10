@@ -4,6 +4,52 @@ Everything below was found while taking BAR from 6.8 → 32+ fps (heavy cells)
 on zink→KosmicKrisp→Metal, with identical rendering. Ordered by expected
 upstream value.
 
+## Upstream status at the Mesa 26.2.2 pin (2026-09-10)
+
+- **Landed upstream, our local patch dropped** — `zink: Address
+  libvulkan.1.dylib dlopen failure on macOS` (upstream `c26d3301b26`, in 26.2.2):
+  zink now dlopens `@rpath/libvulkan.1.dylib` and the build bakes the loader
+  location via the new `-Dvulkan-loader-rpath` meson option (our build script
+  passes `/opt/homebrew/lib` for dev runs; the release bundle resolves it via
+  the engine's LC_RPATH). Our old `patches/mesa/0009` (try @rpath before bare
+  name) was redundant and was removed.
+- **Landed upstream, our local patch dropped** — `kk: Compile all shaders with
+  fast math` (upstream `bdc3a6afe1a`, in 26.2.2): KosmicKrisp now compiles
+  every shader with `MTLMathModeFast` natively (with per-ALU math controls via
+  `VK_KHR_shader_float_controls2`). Our old `patches/mesa/0012`
+  (`KK_MATH_MODE` knob) was redundant and was removed; the engine's
+  `setenv("KK_MATH_MODE", "fast")` is now inert (kept only as a user override
+  for older driver builds).
+- **Landed on `main` (95c504fa17a) but NOT in the 26.2.2 stable branch —
+  still carried locally** — zink renderpass tracking for KosmicKrisp (our old
+  patch 0013, now `patches/mesa/0009`; the +4.8% M2-Air win). Re-dropped once
+  it backports to stable 26.2.x.
+- **Still not upstreamed — still carried locally** (patch numbers at the
+  26.2.2 pin): 0001 poly scratch barrier (old 0001), 0002 push-desc
+  save/restore (old 0002), 0003 fillModeNonSolid (old 0008), 0004 geometry
+  heap reset-once (old 0003), 0005 zero-init device memory (old 0006), 0006
+  dylib-load log (old 0007), 0007 vertex_buffers_dirty consume-on-bind (old
+  0010; the consume-site moved from zink_draw.cpp to
+  zink_context.c::zink_bind_vertex_buffers_internal in 26.2.2), 0008
+  vertex-elements pipeline gate (old 0011), 0009 renderpass tracking for
+  KosmicKrisp (old 0013, above).
+
+Note: the 26.2.2 Metal4 rework (`kk: Move to Metal4 command encoding`,
+`kk: Record command buffers live and replay only on resubmit`) deleted the
+per-queue pre_gfx command-queue that our old patch 0005 (cross-submission
+heap ordering) ordered events on — the queue is now a single Metal command
+queue with one command buffer per submission, so that hazard is
+unrepresentable and the patch was dropped. It also turned
+`kk_cmd_write` from a deferred `encoder->imm_writes` list into an IMMEDIATE
+`libkk_write_u32` dispatch into the pre_gfx encoder (when not mid-render),
+with a `DISPATCH->DISPATCH` barrier after every libkk dispatch
+(`kk_cmd_meta.c`) — which is exactly the ordering the second hunk of our old
+geometry-heap patch (now 0004) was hand-encoding, so that hunk is
+superseded by upstream and only the `uses_heap` hunk survives (now 0004).
+Old patch 0004 (uploader bump-state
+clear) is redundant because the 26.2.2 reset path already nulls
+`cmd->uploader.bo/offset`.
+
 ## 1. Recoil engine PR: LuaVAO — enable GL_PRIMITIVE_RESTART only for strip/loop/fan modes
 `engine-2025.06.24@65a1749c29` / `engine@f40af7ce50`.
 LuaVAOImpl force-enables restart around every draw (incl. `Submit()` which is

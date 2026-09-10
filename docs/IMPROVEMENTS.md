@@ -97,7 +97,12 @@ reducing what is drawn.
 - **Fix:** a driver knob (`KK_MATH_MODE=safe|relaxed|fast`, patch in
   `patches/mesa/`), defaulted to `fast` by the engine on macOS
   (user-overridable). **Shaders never feed the synced simulation**, so
-  this cannot affect lockstep — rendering only.
+  this cannot affect lockstep — rendering only. As of the Mesa 26.2.2
+  pin (2026-09) the knob patch is obsolete: upstream KosmicKrisp now
+  compiles all shaders with `MTLMathModeFast` natively
+  (`kk: Compile all shaders with fast math`, `bdc3a6afe1a`), so the
+  engine's `setenv("KK_MATH_MODE", "fast")` is inert (kept only as a
+  user override for older driver builds).
 - **Result:** arena 32.1 → 51.5 fps (+60%), screenshot-identical output.
   Final campaign numbers: 8.0× / 5.9× / 9.7× on the three battle cells.
 
