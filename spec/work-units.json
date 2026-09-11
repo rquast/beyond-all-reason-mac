@@ -2,7 +2,7 @@
   "version": "0.7.1",
   "meta": {
     "version": "1.0.0",
-    "lastUpdated": "2026-09-10T23:08:41.903Z"
+    "lastUpdated": "2026-09-11T02:06:28.644Z"
   },
   "workUnits": {
     "FOUND-001": {
@@ -568,14 +568,15 @@
       "id": "GFX-004",
       "title": "Eliminate per-unit first-spawn hitch (texture upload + shader compile deferred to first use)",
       "type": "story",
-      "status": "specifying",
+      "status": "validating",
       "createdAt": "2026-09-10T22:51:45.889Z",
-      "updatedAt": "2026-09-11T02:03:32.318Z",
+      "updatedAt": "2026-09-11T02:06:28.644Z",
       "description": "When units/buildings first come into scope, the game hitches briefly. On Windows this is a few ms; on the macOS translation stack (Zink→KosmicKrisp→Metal) the same deferred work costs 10-100x more, so the pause is clearly visible. Root cause (from research): S3O model textures are decoded to CPU bitmaps at load (PreloadModels=1), but the actual GL texture upload (glTexImage2D + glGenerateMipmap) is deferred to first use via CModelLoader::Upload() → textureHandlerS3O.LoadTexture(), triggered by SolidObjectDef::LoadModel() at unit spawn (CUnit::PreInit) or first draw. New shader variants also compile at first draw of a unit type. Both run synchronously on the main thread, and the direct-present fence backpressure in MetalPresent.mm stretches one-off stalls. Fix direction: at end of CWorldDrawer::InitPost() (after DrainPreloadFutures + UploadVBOs), perform the deferred GL uploads (textureHandlerS3O.LoadTexture for every preloaded non-3DO model) so the cost moves to the load screen; optionally pre-warm common shader variants. Rendering-only: no sim impact, no determinism impact.",
       "epic": "macos-layer",
       "children": [],
       "attachments": [
-        "spec/attachments/GFX-004/RESEARCH-first-spawn-hitch.md"
+        "spec/attachments/GFX-004/RESEARCH-first-spawn-hitch.md",
+        "spec/attachments/GFX-004/ast-research-model-upload-seam.md"
       ],
       "userStory": {
         "role": "macOS player",
@@ -586,6 +587,18 @@
         {
           "state": "specifying",
           "timestamp": "2026-09-10T23:07:25.902Z"
+        },
+        {
+          "state": "testing",
+          "timestamp": "2026-09-11T02:06:12.002Z"
+        },
+        {
+          "state": "implementing",
+          "timestamp": "2026-09-11T02:06:15.595Z"
+        },
+        {
+          "state": "validating",
+          "timestamp": "2026-09-11T02:06:28.644Z"
         }
       ],
       "rules": [
@@ -731,12 +744,12 @@
       "BUILD-002",
       "LAUNCH-001"
     ],
-    "specifying": [
-      "GFX-004"
-    ],
+    "specifying": [],
     "testing": [],
     "implementing": [],
-    "validating": [],
+    "validating": [
+      "GFX-004"
+    ],
     "done": [
       "FOUND-001",
       "PLAT-003",
