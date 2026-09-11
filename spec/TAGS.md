@@ -24,6 +24,7 @@ Architectural component tags
 | `@foundation` | Foundation / project bootstrap work (event storm, foundation.json, tags) |
 | `@launcher` | BAR macOS launcher + packaging layer: launcher.sh, consent/message/progress dialogs, release pipeline, content download |
 | `@log-backend` | Log backend subsystem (System/Log): backend choke point, sinks, filters, repeat coalescer |
+| `@rendering` | Engine rendering subsystem: models, textures, drawers, GL upload paths |
 | `@sync-gate` | Multiplayer-determinism gate: float->short UB sweep, testClampRad, sync validation registry |
 
 ### Feature Group Tags (Required)
@@ -74,4 +75,4 @@ Automation integration tags
 
 ---
 
-_Last updated: 2026-09-09T06:51:44.922Z_
+_Last updated: 2026-09-11T02:02:44.974Z_

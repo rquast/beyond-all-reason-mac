@@ -610,6 +610,28 @@ endif()
 	target_include_directories(test_${test_name} PRIVATE ${ENGINE_SOURCE_DIR}/lib/)
 
 ################################################################################
+### ModelNeedsFirstUpload (GFX-004: load-time bulk S3O texture upload selection)
+# NeedsFirstUpload is inline in 3DModel.hpp (kept GL-free so it is unit-testable:
+# myGL.h #error's under UNIT_TEST), so the GL-bound 3DModel.cpp is NOT linked.
+# S3DModel instances are constructed in place (no move), and the ScopedTransformMemAlloc
+# 0-elem path makes the dtor early-return; the only out-of-line symbol its expression
+# references is Transform::Zero(), which the test TU stubs.
+	set(test_name ModelNeedsFirstUpload)
+	set(test_src
+			"${CMAKE_CURRENT_SOURCE_DIR}/engine/Rendering/testModelNeedsFirstUpload.cpp"
+			"${ENGINE_SOURCE_DIR}/Rendering/Models/ModelsMemStorage.cpp"
+			"${ENGINE_SOURCE_DIR}/Rendering/Common/UpdateList.cpp"
+			${sources_engine_System_Threading}
+			${test_Common_sources}
+		)
+
+	set(test_libs
+			""
+		)
+
+	add_spring_test(${test_name} "${test_src}" "${test_libs}" "-DNOT_USING_CREG")
+
+################################################################################
 ### BenchmarkMemPoolTypes
 	set(test_name benchmarkMemPoolTypes)
 	set(test_src

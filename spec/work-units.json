@@ -2,7 +2,7 @@
   "version": "0.7.1",
   "meta": {
     "version": "1.0.0",
-    "lastUpdated": "2026-09-09T06:53:05.497Z"
+    "lastUpdated": "2026-09-10T23:08:41.903Z"
   },
   "workUnits": {
     "FOUND-001": {
@@ -563,6 +563,157 @@
       "attachments": [
         "spec/attachments/LAUNCH-002/ast-research-online-disable-machinery.md"
       ]
+    },
+    "GFX-004": {
+      "id": "GFX-004",
+      "title": "Eliminate per-unit first-spawn hitch (texture upload + shader compile deferred to first use)",
+      "type": "story",
+      "status": "specifying",
+      "createdAt": "2026-09-10T22:51:45.889Z",
+      "updatedAt": "2026-09-11T02:03:32.318Z",
+      "description": "When units/buildings first come into scope, the game hitches briefly. On Windows this is a few ms; on the macOS translation stack (Zink→KosmicKrisp→Metal) the same deferred work costs 10-100x more, so the pause is clearly visible. Root cause (from research): S3O model textures are decoded to CPU bitmaps at load (PreloadModels=1), but the actual GL texture upload (glTexImage2D + glGenerateMipmap) is deferred to first use via CModelLoader::Upload() → textureHandlerS3O.LoadTexture(), triggered by SolidObjectDef::LoadModel() at unit spawn (CUnit::PreInit) or first draw. New shader variants also compile at first draw of a unit type. Both run synchronously on the main thread, and the direct-present fence backpressure in MetalPresent.mm stretches one-off stalls. Fix direction: at end of CWorldDrawer::InitPost() (after DrainPreloadFutures + UploadVBOs), perform the deferred GL uploads (textureHandlerS3O.LoadTexture for every preloaded non-3DO model) so the cost moves to the load screen; optionally pre-warm common shader variants. Rendering-only: no sim impact, no determinism impact.",
+      "epic": "macos-layer",
+      "children": [],
+      "attachments": [
+        "spec/attachments/GFX-004/RESEARCH-first-spawn-hitch.md"
+      ],
+      "userStory": {
+        "role": "macOS player",
+        "action": "play a game without the camera freezing when new unit/building types first appear on screen",
+        "benefit": "smooth, Windows-comparable gameplay through the translation stack"
+      },
+      "stateHistory": [
+        {
+          "state": "specifying",
+          "timestamp": "2026-09-10T23:07:25.902Z"
+        }
+      ],
+      "rules": [
+        {
+          "id": 0,
+          "text": "Rendering-only change: nothing under rts/Sim/ or rts/lib/streflop/ changes behavior; the sync-validation gate must pass unchanged",
+          "deleted": false,
+          "createdAt": "2026-09-10T23:07:31.810Z"
+        },
+        {
+          "id": 1,
+          "text": "Move first-use GL texture upload (glTexImage2D + glGenerateMipmap for S3O model textures) from first spawn to map load, executed after DrainPreloadFutures(0) + UploadVBOs() in CWorldDrawer::InitPost()",
+          "deleted": false,
+          "createdAt": "2026-09-10T23:07:37.229Z"
+        },
+        {
+          "id": 2,
+          "text": "First-use of a model after the load-time bulk upload must be a no-op (uploaded flag / cached texIDs) so no code path can re-upload or desync texture state",
+          "deleted": false,
+          "createdAt": "2026-09-10T23:07:50.551Z"
+        },
+        {
+          "id": 3,
+          "text": "PreloadModels=0 must keep working: the lazy first-use upload path stays intact for anything not uploaded at load time (runtime-added models, 3DO atlases, projectile visuals)",
+          "deleted": false,
+          "createdAt": "2026-09-10T23:07:50.780Z"
+        },
+        {
+          "id": 4,
+          "text": "Accept longer map-load time: move the uploads to the load screen (Option A). Human approved proceeding with Option A on 2026-09-11.",
+          "deleted": false,
+          "createdAt": "2026-09-10T23:21:01.557Z"
+        },
+        {
+          "id": 5,
+          "text": "Unconditional (upstreamable): applies on all platforms. It only reorders existing load-time work earlier (no new work), so the desktop load-time delta is negligible and the change stays a thin, rebaseable upstream candidate. Human approved proceeding with Option A on 2026-09-11.",
+          "deleted": false,
+          "createdAt": "2026-09-10T23:21:51.205Z"
+        },
+        {
+          "id": 6,
+          "text": "Unconditional (upstreamable) — applies on all platforms; the change only reorders existing load-time work earlier. Human approved 2026-09-11.",
+          "deleted": true,
+          "createdAt": "2026-09-10T23:22:08.663Z",
+          "deletedAt": "2026-09-10T23:25:20.112Z"
+        },
+        {
+          "id": 7,
+          "text": "Unconditional (upstreamable) — applies on all platforms; only reorders existing load-time work earlier. Human approved 2026-09-11.",
+          "deleted": true,
+          "createdAt": "2026-09-10T23:22:25.134Z",
+          "deletedAt": "2026-09-10T23:23:02.481Z"
+        },
+        {
+          "id": 8,
+          "text": "Unconditional (upstreamable): applies on all platforms; only reorders existing load-time work earlier. Human approved 2026-09-11.",
+          "deleted": true,
+          "createdAt": "2026-09-10T23:23:49.871Z",
+          "deletedAt": "2026-09-10T23:25:28.532Z"
+        },
+        {
+          "id": 9,
+          "text": "Unconditional (upstreamable): applies on all platforms; only reorders existing load-time work earlier. Human approved 2026-09-11.",
+          "deleted": true,
+          "createdAt": "2026-09-10T23:24:41.313Z",
+          "deletedAt": "2026-09-10T23:24:58.686Z"
+        }
+      ],
+      "nextRuleId": 10,
+      "examples": [
+        {
+          "id": 0,
+          "text": "Map load with PreloadModels=1 on an M2-class Mac completes with all S3O model textures uploaded: textureHandlerS3O reports no texID==0 entries for preloaded models, and load time increases by a measured, reported amount (no hard budget set — target: acceptable, progress shown via SetLoadMessage)",
+          "deleted": false,
+          "createdAt": "2026-09-10T23:08:02.640Z"
+        },
+        {
+          "id": 1,
+          "text": "After the fix, when the first enemy unit of a new type enters view, no [stall] draw gap >150ms line appears in the infolog and no visible camera freeze occurs (Tracy shows no Upload/LoadTexture/glGenerateMipmap span on the main thread at first spawn)",
+          "deleted": false,
+          "createdAt": "2026-09-10T23:08:02.873Z"
+        },
+        {
+          "id": 2,
+          "text": "A unit with PreloadModels=0 in user settings still works: its texture uploads at first spawn exactly as before the change (lazy path intact)",
+          "deleted": false,
+          "createdAt": "2026-09-10T23:08:13.048Z"
+        },
+        {
+          "id": 3,
+          "text": "Player spawns a factory and queues a first building of a new type: the building appears without a visible freeze; the (now load-time-paid) texture work does not re-run at spawn",
+          "deleted": false,
+          "createdAt": "2026-09-10T23:08:13.275Z"
+        }
+      ],
+      "nextExampleId": 4,
+      "questions": [
+        {
+          "id": 0,
+          "text": "@human: Is a longer map-load time (pure GL texture uploads moved from gameplay to the load screen) acceptable, or should the cost be spread across early frames (Option C in the research doc)?",
+          "deleted": false,
+          "createdAt": "2026-09-10T23:08:25.291Z",
+          "selected": true,
+          "answered": true,
+          "answer": "Unconditional (upstreamable): applies on all platforms; only reorders existing load-time work earlier. Human approved 2026-09-11."
+        },
+        {
+          "id": 1,
+          "text": "@human: Should the change be unconditional (upstreamable, applies on Windows/Linux too) or macOS-gated behind a config/env knob pending desktop load-time measurements?",
+          "deleted": true,
+          "createdAt": "2026-09-10T23:08:25.526Z",
+          "selected": true,
+          "answered": true,
+          "answer": "Unconditional (upstreamable): applies on all platforms; only reorders existing load-time work earlier. Human approved 2026-09-11.",
+          "deletedAt": "2026-09-10T23:25:04.753Z"
+        }
+      ],
+      "nextQuestionId": 2,
+      "architectureNotes": [
+        {
+          "id": 0,
+          "text": "Integration points: CWorldDrawer::InitPost (rts/Rendering/WorldDrawer.cpp:156-168) calls the new bulk upload after DrainPreloadFutures(0)+UploadVBOs(); CModelLoader::Upload (rts/Rendering/Models/IModelParser.cpp:462) is the per-model entry point (sets model->uploaded, releases shatter indices, runs CheckPieceNormals); CS3OTextureHandler::LoadTexture (rts/Rendering/Textures/S3OTextureHandler.cpp:106) creates the GL texIDs; first-use call sites stay unchanged (SolidObjectDef::LoadModel, UnitDrawer, UnitDrawerData) and become no-ops via the uploaded/texID caches",
+          "deleted": false,
+          "createdAt": "2026-09-10T23:08:41.903Z"
+        }
+      ],
+      "nextNoteId": 1,
+      "estimate": 3
     }
   },
   "states": {
@@ -580,7 +731,9 @@
       "BUILD-002",
       "LAUNCH-001"
     ],
-    "specifying": [],
+    "specifying": [
+      "GFX-004"
+    ],
     "testing": [],
     "implementing": [],
     "validating": [],
@@ -595,7 +748,7 @@
   },
   "prefixCounters": {
     "SYNC": 4,
-    "GFX": 3,
+    "GFX": 4,
     "PLAT": 5,
     "BUILD": 2,
     "LAUNCH": 2

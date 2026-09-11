@@ -1,0 +1,191 @@
+{
+  "scenarios": [
+    {
+      "name": "Load-time bulk upload selects every loaded non-3DO model and skips 3DO and unparsed models",
+      "testMappings": [
+        {
+          "file": "test/engine/Rendering/testModelNeedsFirstUpload.cpp",
+          "lines": "58-90",
+          "implMappings": [
+            {
+              "file": "rts/Rendering/Models/3DModel.hpp",
+              "lines": [
+                67,
+                68,
+                69,
+                70,
+                71,
+                72,
+                73,
+                74,
+                75,
+                76,
+                77,
+                78,
+                79,
+                80,
+                81,
+                82,
+                83,
+                84,
+                85,
+                86,
+                87,
+                88,
+                89,
+                90,
+                91,
+                92,
+                93
+              ]
+            },
+            {
+              "file": "rts/Rendering/Models/IModelParser.cpp",
+              "lines": [
+                403,
+                404,
+                405,
+                406,
+                407,
+                408,
+                409,
+                410,
+                411,
+                412,
+                413,
+                414,
+                415,
+                416
+              ]
+            },
+            {
+              "file": "rts/Rendering/WorldDrawer.cpp",
+              "lines": [
+                156,
+                157,
+                158,
+                159,
+                160,
+                161,
+                162,
+                163,
+                164,
+                165,
+                166,
+                167,
+                168,
+                169,
+                170,
+                171,
+                172,
+                173,
+                174,
+                175
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "A model whose first upload already happened is never selected again",
+      "testMappings": [
+        {
+          "file": "test/engine/Rendering/testModelNeedsFirstUpload.cpp",
+          "lines": "92-110",
+          "implMappings": [
+            {
+              "file": "rts/Rendering/Models/3DModel.hpp",
+              "lines": [
+                67,
+                68,
+                69,
+                70,
+                71,
+                72,
+                73,
+                74,
+                75,
+                76,
+                77,
+                78,
+                79,
+                80,
+                81,
+                82,
+                83,
+                84,
+                85,
+                86,
+                87,
+                88,
+                89,
+                90,
+                91,
+                92,
+                93
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "A model still being parsed (or not yet loaded) is not selected",
+      "testMappings": [
+        {
+          "file": "test/engine/Rendering/testModelNeedsFirstUpload.cpp",
+          "lines": "112-128",
+          "implMappings": [
+            {
+              "file": "rts/Rendering/Models/3DModel.hpp",
+              "lines": [
+                67,
+                68,
+                69,
+                70,
+                71,
+                72,
+                73,
+                74,
+                75,
+                76,
+                77,
+                78,
+                79,
+                80,
+                81,
+                82,
+                83,
+                84,
+                85,
+                86,
+                87,
+                88,
+                89,
+                90,
+                91,
+                92,
+                93
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "stats": {
+    "totalScenarios": 3,
+    "coveredScenarios": 3,
+    "coveragePercent": 100,
+    "testFiles": [
+      "test/engine/Rendering/testModelNeedsFirstUpload.cpp"
+    ],
+    "implFiles": [
+      "rts/Rendering/Models/3DModel.hpp",
+      "rts/Rendering/Models/IModelParser.cpp",
+      "rts/Rendering/WorldDrawer.cpp"
+    ],
+    "totalLinesCovered": 184
+  }
+}

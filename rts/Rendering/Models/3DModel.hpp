@@ -67,6 +67,32 @@ struct S3DModel
 
 	void FlattenPieceTree(S3DModelPiece* root);
 
+	/**
+	 * True when the model still owes the deferred first-use GL upload
+	 * (CModelLoader::Upload -> S3OTextureHandler::LoadTexture -> glTexImage2D +
+	 * glGenerateMipmap). This is the pure, GL-free selection predicate that
+	 * decides which models the load-time bulk upload (GFX-004) applies to:
+	 * only fully-parsed, not-yet-uploaded, non-3DO models (3DO textures ride
+	 * the preloaded atlas, not the per-model upload path).
+	 * Kept inline/GL-free so it is unit-testable (myGL.h #error's in unit
+	 * tests) without linking the GL-bound S3DModel translation unit.
+	 */
+	bool NeedsFirstUpload() const
+	{
+		// not fully parsed yet (or the dummy model at index 0)
+		if (loadStatus != LoadStatus::LOADED)
+			return false;
+
+		// already uploaded at load time (or by the first-use path); re-running
+		// the upload would re-create the GL textures
+		if (uploaded)
+			return false;
+
+		// 3DO models don't use the per-model S3O texture path; their textures
+		// are preloaded into the shared 3DO atlases (C3DOTextureHandler::Init)
+		return (type != MODELTYPE_3DO);
+	}
+
 	void UpdatePiecesMinMaxExtents();
 
 	// default values set by parsers; radius is also cached in WorldObject::drawRadius (used by projectiles)

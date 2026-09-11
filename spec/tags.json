@@ -33,6 +33,10 @@
           "description": "Log backend subsystem (System/Log): backend choke point, sinks, filters, repeat coalescer"
         },
         {
+          "name": "@rendering",
+          "description": "Engine rendering subsystem: models, textures, drawers, GL upload paths"
+        },
+        {
           "name": "@sync-gate",
           "description": "Multiplayer-determinism gate: float->short UB sweep, testClampRad, sync validation registry"
         }
@@ -121,6 +125,6 @@
     }
   ],
   "statistics": {
-    "lastUpdated": "2026-09-09T06:51:44.922Z"
+    "lastUpdated": "2026-09-11T02:02:44.974Z"
   }
 }

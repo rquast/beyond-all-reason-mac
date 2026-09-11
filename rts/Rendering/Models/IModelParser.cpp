@@ -400,6 +400,21 @@ void CModelLoader::DrainPreloadFutures(uint32_t numAllowed)
 	}
 }
 
+void CModelLoader::UploadAllLoaded()
+{
+	RECOIL_DETAILED_TRACY_ZONE;
+	assert(Threading::IsMainThread() || Threading::IsGameLoadThread());
+
+	// all preloaded models are parsed by the time this runs (callers drain the
+	// preload futures first), so <models> is not mutated concurrently and the
+	// loader lock is only needed for the cached-model bookkeeping in Upload()
+	for (auto& m: models) {
+		if (!m.NeedsFirstUpload())
+			continue;
+		Upload(&m);
+	}
+}
+
 IModelParser* CModelLoader::GetFormatParser(const std::string& pathExt)
 {
 	RECOIL_DETAILED_TRACY_ZONE;

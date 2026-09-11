@@ -161,6 +161,14 @@ void CWorldDrawer::InitPost() const
 			{
 				auto lock = CLoadLock::GetUniqueLock();
 				mv.UploadVBOs();
+
+				// pay the per-model S3O texture uploads (glTexImage2D +
+				// glGenerateMipmap) here, on the load screen, instead of at
+				// first unit spawn: on a translation GL stack the deferred
+				// first-use upload is a visible main-thread hitch (GFX-004).
+				// 3DO models are skipped (atlas textures); first use of
+				// anything uploaded below is a no-op via model->uploaded.
+				modelLoader.UploadAllLoaded();
 			}
 			mv.SetSafeToDeleteVectors();
 			modelLoader.LogErrors();

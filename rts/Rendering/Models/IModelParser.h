@@ -38,6 +38,19 @@ public:
 
 	void DrainPreloadFutures(uint32_t numAllowed = 0);
 
+	/**
+	 * Upload render data (VBOs + S3O textures) of every fully-parsed, not-yet-uploaded
+	 * model now, instead of deferring it to first use.
+	 *
+	 * Call after DrainPreloadFutures(0) once all preloaded models are parsed;
+	 * on a translation GL stack (Zink -> KosmicKrisp -> Metal) the per-model
+	 * first-use cost (glTexImage2D + glGenerateMipmap, main-thread, synchronous)
+	 * is large enough to be a visible hitch, so the bulk pays for it on the
+	 * load screen instead (GFX-004). Idempotent: models already uploaded are
+	 * skipped, and 3DO models never enter this path (atlas-based textures).
+	 */
+	void UploadAllLoaded();
+
 	const std::vector<S3DModel>& GetModelsVec() const { return models; }
 	      std::vector<S3DModel>& GetModelsVec()       { return models; }
 private:
