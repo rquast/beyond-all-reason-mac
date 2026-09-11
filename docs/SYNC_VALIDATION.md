@@ -142,6 +142,7 @@ in §3 and flagged as an upstream candidate.
 | COB callin float→short truncation | `rts/Sim/Units/Scripts/CobInstance.cpp`, `CobThread.cpp` | float→short out-of-range conversion is UB; clang-arm64 and gcc-x86 disagreed. Replaced with defined int32 truncation matching the fleet's observed behavior. |
 | float→short/heading UB sweep | `rts/Sim/Path/IPathController.cpp`, `rts/Sim/MoveTypes/{Ground,HoverAir}MoveType.cpp`, `rts/Lua/LuaSynced{MoveCtrl,Read}.cpp` | Same UB class as above, found by audit rather than by desync. Same defined-truncation replacement. |
 | streflop as submodule (2026.07.04 base) | `rts/lib/streflop` @ `570f86f` (RecoilEngine/streflop, also the pin of upstream master's x86 builds) | On this base `math::floor` resolves on **both** arches to the streflop libm `s_floorf`/`s_floor` bit-twiddling, which the committed `tools/sync-test` references prove bit-identical NEON/arm64 vs SSE/x86-64 (1985/1985 common inputs, 0 mismatches, NaN/inf/huge edge rows included). The cvtt class is therefore closed **without** the emulation, and the 2025.06.24-lineage cvtt fix (`c20b863148`) must **not** be ported forward: this base's x86 fleet computes IEEE `floor(NaN)=NaN`, so the emulation would make arm64 diverge. Pinned by the `test_FloorSemantics` regression gate (SYNC-004). |
+| `CR_MEMBER_UN(paletteIndex)` in `CSolidObject` CREG registration | `rts/Sim/Objects/SolidObject.cpp` (one line, byte-identical to upstream) | Consumes upstream fix `4ab6518d` ("fix a failing creg unit test", #3312/#3179), which landed **after** the `2026.07.04` pin. `paletteIndex` (display-side palette index, derived from the synced `team`) was added upstream without a CREG registration, leaving an unregistered layout gap — `--test-creg` (Test3) reported it as "7 of 214 classes broken". `CR_MEMBER_UN` = `CR_IGNORED`: layout bookkeeping only, the member stays out of the serialization stream, so this changes no synced/serialized behavior on any platform; it is byte-identical to upstream master's registration block. |
 
 **Base scope.** The register above mixes two bases. Rows 1–2 are the
 2025.06.24-lineage port (in-tree streflop, v0.11/v0.12); the port re-landed
@@ -149,7 +150,10 @@ onto the 2026.07.04 upstream base (main / v0.13), where streflop is a
 submodule and the cvtt / dbl-64 divergence class is closed by the shared
 streflop libm itself (row 5) instead of by port-authored floor code. Rows
 3–4 (the `rts/Sim/` int32 truncation sweep) are upstream now
-(`7104ab1f76` / `8a041014a2`) and apply on both bases.
+(`7104ab1f76` / `8a041014a2`) and apply on both bases. Row 6
+(`CR_MEMBER_UN(paletteIndex)`) is likewise an upstream fix consumed
+verbatim (`4ab6518d`, after the `2026.07.04` pin): registration bookkeeping
+only, no synced behavior change.
 
 Everything else the port changes is unsynced (rendering, present, input,
 audio, packaging) or build-system-level with sync gates re-run after every
