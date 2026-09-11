@@ -381,6 +381,10 @@ endif()
 ################################################################################
 ### CREG
 		add_test(NAME testCreg COMMAND ${CMAKE_BINARY_DIR}/spring-headless${CMAKE_EXECUTABLE_SUFFIX} --test-creg)
+		# spring-headless resolves base/ content through its VFS: the build
+		# tree's base/ (built by the basecontent target) is only reachable via
+		# the SPRING_DATADIR data-dir, which the test harness must provide.
+		set_tests_properties(testCreg PROPERTIES ENVIRONMENT "SPRING_DATADIR=${CMAKE_BINARY_DIR}")
 
 ### CREG LoadSave
 		set(test_name LoadSave)
@@ -424,6 +428,9 @@ endif()
 	add_spring_test(${test_name} "${test_src}" "${test_libs}" "${test_flags}")
 	target_include_directories(test_${test_name} PRIVATE ${ENGINE_SOURCE_DIR}/lib/)
 	add_dependencies(test_${test_name} springcontent.sdz)
+	# The unitsync VFS only reaches the build tree's base/ (built by the
+	# basecontent target) through a data-dir; point it at the build root.
+	set_tests_properties(testUnitSync PROPERTIES ENVIRONMENT "SPRING_DATADIR=${CMAKE_BINARY_DIR}")
 
 ################################################################################
 ### ThreadPool
